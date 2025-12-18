@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 export default function QuizQuestionSubmitScreen({ navigation, route }) {
+  const { colors, isDark } = useTheme();
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [timeLeft, setTimeLeft] = useState(7); // 7 seconds timer
   const [currentQuestion, setCurrentQuestion] = useState(3);
@@ -66,34 +68,38 @@ export default function QuizQuestionSubmitScreen({ navigation, route }) {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="border-b border-gray-100 bg-white px-5 pb-4 pt-12">
-        <View className="mb-3 flex-row items-center justify-between">
+      <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingBottom: 16, paddingTop: 48 }}>
+        <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text className="text-lg font-semibold text-gray-800">Quiz Majeed</Text>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Quiz Majeed</Text>
           <TouchableOpacity>
-            <Ionicons name="person-circle-outline" size={28} color="#000" />
+            <Ionicons name="person-circle-outline" size={28} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Progress and Timer */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1">
-            <View className="h-2 overflow-hidden rounded-full bg-gray-200">
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <View style={{ height: 8, overflow: 'hidden', borderRadius: 4, backgroundColor: colors.border }}>
               <View
-                className="h-full rounded-full bg-teal-500"
-                style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
+                style={{
+                  height: '100%',
+                  borderRadius: 4,
+                  backgroundColor: colors.primary,
+                  width: `${(currentQuestion / totalQuestions) * 100}%`,
+                }}
               />
             </View>
           </View>
-          <View className="ml-4 flex-row items-center">
-            <Ionicons name="time-outline" size={18} color="#14b8a6" />
-            <Text className="ml-1 text-sm font-semibold text-teal-600">
+          <View style={{ marginLeft: 16, flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="time-outline" size={18} color={colors.primary} />
+            <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: '600', color: colors.primary }}>
               00:{String(timeLeft).padStart(2, '0')}
             </Text>
           </View>
@@ -101,39 +107,54 @@ export default function QuizQuestionSubmitScreen({ navigation, route }) {
       </View>
 
       {/* Question Section */}
-      <View className="flex-1 px-5 pt-6">
+      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
         {/* Category Badge */}
-        <View className="mb-4 self-start rounded-full bg-teal-100 px-4 py-2">
-          <Text className="text-xs font-semibold text-teal-700">{question.category}</Text>
+        <View style={{ marginBottom: 16, alignSelf: 'flex-start', borderRadius: 20, backgroundColor: colors.primaryLight, paddingHorizontal: 16, paddingVertical: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>{question.category}</Text>
         </View>
 
         {/* Question Text */}
-        <View className="mb-6">
-          <Text className="mb-2 text-lg font-semibold text-gray-800">Question:</Text>
-          <Text className="text-base leading-6 text-gray-700">{question.question}</Text>
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ marginBottom: 8, fontSize: 18, fontWeight: '600', color: colors.text }}>Question:</Text>
+          <Text style={{ fontSize: 16, lineHeight: 24, color: colors.text }}>{question.question}</Text>
         </View>
 
         {/* Options */}
-        <View className="mb-6">
+        <View style={{ marginBottom: 24 }}>
           {question.options.map((option) => (
             <TouchableOpacity
               key={option.id}
-              className={`mb-3 flex-row items-center rounded-xl border-2 p-4 ${
-                selectedAnswer === option.id
-                  ? 'border-teal-500 bg-teal-50'
-                  : 'border-gray-200 bg-white'
-              }`}
+              style={{
+                marginBottom: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: selectedAnswer === option.id ? colors.primary : colors.border,
+                backgroundColor: selectedAnswer === option.id ? (isDark ? '#0D5A47' : '#F0FDFA') : colors.card,
+                padding: 16,
+              }}
               onPress={() => handleAnswerSelect(option.id)}>
               <View
-                className={`mr-3 h-6 w-6 items-center justify-center rounded-full border-2 ${
-                  selectedAnswer === option.id ? 'border-teal-500 bg-teal-500' : 'border-gray-300'
-                }`}>
-                {selectedAnswer === option.id && <View className="h-3 w-3 rounded-full bg-white" />}
+                style={{
+                  marginRight: 12,
+                  height: 24,
+                  width: 24,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: selectedAnswer === option.id ? colors.primary : colors.border,
+                  backgroundColor: selectedAnswer === option.id ? colors.primary : 'transparent',
+                }}>
+                {selectedAnswer === option.id && <View style={{ height: 12, width: 12, borderRadius: 6, backgroundColor: '#fff' }} />}
               </View>
               <Text
-                className={`text-base ${
-                  selectedAnswer === option.id ? 'font-semibold text-teal-700' : 'text-gray-700'
-                }`}>
+                style={{
+                  fontSize: 16,
+                  fontWeight: selectedAnswer === option.id ? '600' : '400',
+                  color: selectedAnswer === option.id ? colors.primary : colors.text,
+                }}>
                 {option.text}
               </Text>
             </TouchableOpacity>
@@ -142,29 +163,33 @@ export default function QuizQuestionSubmitScreen({ navigation, route }) {
 
         {/* Submit Button */}
         <TouchableOpacity
-          className={`items-center rounded-xl py-4 ${
-            selectedAnswer ? 'bg-teal-500' : 'bg-gray-300'
-          }`}
+          style={{
+            alignItems: 'center',
+            borderRadius: 12,
+            paddingVertical: 16,
+            backgroundColor: selectedAnswer ? colors.primary : colors.border,
+            opacity: selectedAnswer ? 1 : 0.6,
+          }}
           onPress={handleSubmit}
           disabled={!selectedAnswer}>
-          <Text className="text-base font-bold text-white">Submit</Text>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: selectedAnswer ? '#fff' : colors.textSecondary }}>Submit</Text>
         </TouchableOpacity>
       </View>
 
       {/* Bottom Navigation */}
-      <View className="border-t border-gray-100 bg-white px-5 py-4">
-        <View className="flex-row items-center justify-between">
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity
-            className="mr-3 flex-1 items-center rounded-xl bg-gray-100 py-3"
+            style={{ marginRight: 12, flex: 1, alignItems: 'center', borderRadius: 12, backgroundColor: colors.border, paddingVertical: 12 }}
             onPress={handleBack}>
-            <Text className="font-semibold text-gray-600">Back</Text>
+            <Text style={{ fontWeight: '600', color: colors.text }}>Back</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 flex-row items-center justify-center rounded-xl bg-gray-100 py-3"
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.border, paddingVertical: 12 }}
             onPress={handleSkip}>
-            <Text className="mr-2 font-semibold text-gray-600">Skip</Text>
-            <Ionicons name="arrow-forward" size={18} color="#666" />
+            <Text style={{ marginRight: 8, fontWeight: '600', color: colors.text }}>Skip</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>

@@ -70,11 +70,11 @@ export default function SettingsScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View className="items-start justify-center p-4">
-        <StyledText className="ml-4 text-4xl font-bold text-[#1C2C3B]">{t('settings')}</StyledText>
+      <View style={{ alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16 }}>
+        <StyledText style={{ fontSize: 32, fontWeight: 'bold', color: colors.text }}>{t('settings')}</StyledText>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16 }}>
+      <ScrollView style={{ flex: 1, paddingHorizontal: 20 }}>
         {/* ========== GENERAL SETTINGS ========== */}
         <View
           style={{

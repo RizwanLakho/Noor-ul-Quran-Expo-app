@@ -13,6 +13,7 @@ import {
   ImageBackground,
   ImageSourcePropType,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -21,6 +22,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { api } from '../../utils/api';
 import { useCustomAlert } from '../../context/CustomAlertContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import StyledText from '../../components/StyledText';
 
 const bg = require('../../../assets/bg.png');
@@ -58,6 +60,7 @@ export default function LoginScreen({
   const [loading, setLoading] = useState(false);
   const { showAlert } = useCustomAlert();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   const handleSignIn = async () => {
     // Validation
@@ -131,7 +134,8 @@ export default function LoginScreen({
 
   return (
     <ImageBackground source={bg} resizeMode="cover" className="flex-1 items-center justify-center">
-      <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}>
@@ -151,22 +155,22 @@ export default function LoginScreen({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled">
             {/* Welcome Card */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               {/* Header */}
               <View style={styles.header}>
-                <StyledText style={styles.welcomeText}>{t('welcomeBackLogin')}</StyledText>
-                <StyledText style={styles.subtitle}>{t('enterCredentialsToSignIn')}</StyledText>
+                <StyledText style={[styles.welcomeText, { color: colors.text }]}>{t('welcomeBackLogin')}</StyledText>
+                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>{t('enterCredentialsToSignIn')}</StyledText>
               </View>
 
               {/* Email Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <MaterialCommunityIcons name="email-outline" size={24} color="black" />
+                  <MaterialCommunityIcons name="email-outline" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('enterEmailPlaceholder')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -176,14 +180,14 @@ export default function LoginScreen({
               </View>
 
               {/* Password Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="lock-closed-outline" size={24} color="black" />
+                  <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('enterPasswordPlaceholder')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -199,12 +203,12 @@ export default function LoginScreen({
 
               {/* Forgot Password */}
               <TouchableOpacity style={styles.forgotPassword} onPress={() => showAlert(t('forgotPassword'), t('featureSoon'), 'info')}>
-                <StyledText style={styles.forgotPasswordText}>{t('forgotPassword')}?</StyledText>
+                <StyledText style={[styles.forgotPasswordText, { color: colors.text }]}>{t('forgotPassword')}?</StyledText>
               </TouchableOpacity>
 
               {/* Sign In Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, loading && styles.buttonDisabled]}
+                style={[styles.signUpButton, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
                 onPress={handleSignIn}
                 disabled={loading}>
                 {loading ? (
@@ -215,29 +219,29 @@ export default function LoginScreen({
               </TouchableOpacity>
 
               {/* Divider */}
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               {/* Google Sign In */}
-              <TouchableOpacity style={styles.socialButton} onPress={onGoogleSignIn}>
-                <View style={styles.googleIcon}>
+              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onGoogleSignIn}>
+                <View style={[styles.googleIcon, { backgroundColor: colors.card }]}>
                   <Image source={gimg} resizeMode="contain" />
                 </View>
-                <StyledText style={styles.socialButtonText}>{t('continueWithGoogle')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithGoogle')}</StyledText>
               </TouchableOpacity>
 
               {/* Facebook Sign In */}
-              <TouchableOpacity style={styles.socialButton} onPress={onFacebookSignIn}>
+              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onFacebookSignIn}>
                 <View style={styles.facebookIcon}>
                   <StyledText style={styles.fText}>f</StyledText>
                 </View>
-                <StyledText style={styles.socialButtonText}>{t('continueWithFacebook')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithFacebook')}</StyledText>
               </TouchableOpacity>
 
               {/* Sign Up Link */}
               <View style={styles.signUpContainer}>
-                <StyledText style={styles.signUpPrompt}>{t('noAccountPrompt')}</StyledText>
+                <StyledText style={[styles.signUpPrompt, { color: colors.textSecondary }]}>{t('noAccountPrompt')}</StyledText>
                 <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                  <StyledText style={styles.signUpLink}>{t('signUp')}</StyledText>
+                  <StyledText style={[styles.signUpLink, { color: colors.text }]}>{t('signUp')}</StyledText>
                 </TouchableOpacity>
               </View>
 
@@ -245,17 +249,17 @@ export default function LoginScreen({
               <TouchableOpacity
                 style={styles.resendVerificationContainer}
                 onPress={handleResendVerification}>
-                <Ionicons name="mail-outline" size={16} color="#666" />
-                <StyledText style={styles.resendVerificationText}>
+                <Ionicons name="mail-outline" size={16} color={colors.textSecondary} />
+                <StyledText style={[styles.resendVerificationText, { color: colors.textSecondary }]}>
                   {t('didNotReceiveVerificationEmail')}
                 </StyledText>
               </TouchableOpacity>
 
               {/* Skip Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, { backgroundColor: '#F0F0F0', marginTop: 10 }]}
+                style={[styles.signUpButton, { backgroundColor: isDark ? colors.surface : '#F0F0F0', marginTop: 10 }]}
                 onPress={onSkip}>
-                <StyledText style={[styles.signUpButtonText, { color: '#000' }]}>{t('skipForNow')}</StyledText>
+                <StyledText style={[styles.signUpButtonText, { color: isDark ? colors.text : '#000' }]}>{t('skipForNow')}</StyledText>
               </TouchableOpacity>
             </View>
           </ScrollView>

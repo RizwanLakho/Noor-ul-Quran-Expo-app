@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 import { EditScreenInfo } from './EditScreenInfo';
 
@@ -10,17 +11,34 @@ type ScreenContentProps = {
 };
 
 export const ScreenContent = ({ title, path, children }: ScreenContentProps) => {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+    },
+    separator: {
+      height: 1,
+      marginVertical: 28,
+      width: '80%',
+      backgroundColor: colors.border,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+  });
+
   return (
-    <View className={styles.container}>
-      <Text className={styles.title}>{title}</Text>
-      <View className={styles.separator} />
+    <View style={styles.container}>
+      <Text style={styles.title}>{title}</Text>
+      <View style={styles.separator} />
       <EditScreenInfo path={path} />
       {children}
     </View>
   );
-};
-const styles = {
-  container: `items-center flex-1 justify-center bg-white`,
-  separator: `h-[1px] my-7 w-4/5 bg-gray-200`,
-  title: `text-xl font-bold`,
 };

@@ -3,11 +3,13 @@ import { View, TouchableOpacity, StatusBar, Alert, ScrollView } from 'react-nati
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuiz } from '../context/QuizContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import StyledText from '../components/StyledText';
 
 export default function QuizResultScreen({ navigation, route }) {
   const { resetQuiz } = useQuiz();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   const { result } = route.params || {};
 
@@ -52,165 +54,165 @@ export default function QuizResultScreen({ navigation, route }) {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="border-b border-gray-100 bg-white px-5 pb-4 pt-12">
-        <View className="flex-row items-center justify-between">
+      <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingBottom: 16, paddingTop: 48 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity onPress={handleHomePress}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <StyledText className="text-lg font-semibold text-gray-800">{t('quizResult')}</StyledText>
+          <StyledText style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{t('quizResult')}</StyledText>
           <TouchableOpacity>
-            <Ionicons name="person-circle-outline" size={28} color="#000" />
+            <Ionicons name="person-circle-outline" size={28} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 100 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 100 }}>
         {/* Result Card */}
-        <View className="mb-5 rounded-2xl bg-white p-6 shadow-sm">
+        <View style={{ marginBottom: 20, borderRadius: 16, backgroundColor: colors.card, padding: 24 }}>
           {/* Trophy Icon */}
-          <View className="mb-4 items-center">
-            <View className="mb-3 h-24 w-24 items-center justify-center rounded-full bg-teal-100">
-              <MaterialCommunityIcons name="trophy" size={50} color="#14b8a6" />
+          <View style={{ marginBottom: 16, alignItems: 'center' }}>
+            <View style={{ marginBottom: 12, height: 96, width: 96, alignItems: 'center', justifyContent: 'center', borderRadius: 48, backgroundColor: colors.primaryLight }}>
+              <MaterialCommunityIcons name="trophy" size={50} color={colors.primary} />
             </View>
-            <View className="rounded-full bg-teal-500 px-4 py-1">
-              <StyledText className="text-sm font-bold text-white">{t('result')}</StyledText>
+            <View style={{ borderRadius: 20, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 4 }}>
+              <StyledText style={{ fontSize: 14, fontWeight: 'bold', color: '#fff' }}>{t('result')}</StyledText>
             </View>
-            <View className="mt-2 rounded-full bg-teal-100 px-4 py-1">
-              <StyledText className="text-sm font-semibold text-teal-700">{getResultMessage()}</StyledText>
+            <View style={{ marginTop: 8, borderRadius: 20, backgroundColor: colors.primaryLight, paddingHorizontal: 16, paddingVertical: 4 }}>
+              <StyledText style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>{getResultMessage()}</StyledText>
             </View>
           </View>
 
           {/* Category Name */}
-          <StyledText className="mb-2 text-center text-xl font-bold text-gray-800">
+          <StyledText style={{ marginBottom: 8, textAlign: 'center', fontSize: 20, fontWeight: 'bold', color: colors.text }}>
             {result.category}
           </StyledText>
 
           {/* Pass/Fail Badge */}
           {percentage >= 70 ? (
-            <View className="mb-6 items-center">
-              <View className="rounded-full bg-green-100 px-6 py-2">
-                <StyledText className="text-lg font-bold text-green-700">{t('passedStatus')}</StyledText>
+            <View style={{ marginBottom: 24, alignItems: 'center' }}>
+              <View style={{ borderRadius: 20, backgroundColor: colors.success, paddingHorizontal: 24, paddingVertical: 8 }}>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>{t('passedStatus')}</StyledText>
               </View>
             </View>
           ) : (
-            <View className="mb-6 items-center">
-              <View className="rounded-full bg-red-100 px-6 py-2">
-                <StyledText className="text-lg font-bold text-red-700">{t('failedStatus')}</StyledText>
+            <View style={{ marginBottom: 24, alignItems: 'center' }}>
+              <View style={{ borderRadius: 20, backgroundColor: colors.error, paddingHorizontal: 24, paddingVertical: 8 }}>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>{t('failedStatus')}</StyledText>
               </View>
             </View>
           )}
 
           {/* Score Display */}
-          <View className="mb-6 flex-row items-center justify-center">
-            <View className="mr-8 items-center">
-              <StyledText className="mb-1 text-sm text-gray-500">{t('totalScore')}</StyledText>
-              <StyledText className="text-2xl font-bold text-gray-800">{result.totalScore}</StyledText>
+          <View style={{ marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ marginRight: 32, alignItems: 'center' }}>
+              <StyledText style={{ marginBottom: 4, fontSize: 14, color: colors.textSecondary }}>{t('totalScore')}</StyledText>
+              <StyledText style={{ fontSize: 24, fontWeight: 'bold', color: colors.text }}>{result.totalScore}</StyledText>
             </View>
-            <View className="items-center">
-              <StyledText className="mb-1 text-sm text-gray-500">{t('quizScore')}</StyledText>
-              <StyledText className="text-2xl font-bold text-teal-600">{result.quizScore}</StyledText>
+            <View style={{ alignItems: 'center' }}>
+              <StyledText style={{ marginBottom: 4, fontSize: 14, color: colors.textSecondary }}>{t('quizScore')}</StyledText>
+              <StyledText style={{ fontSize: 24, fontWeight: 'bold', color: colors.primary }}>{result.quizScore}</StyledText>
             </View>
           </View>
 
           {/* Percentage Display */}
-          <View className="mb-4 items-center">
-            <View className="mb-2 h-20 w-20 items-center justify-center rounded-full bg-teal-50">
-              <StyledText className="text-2xl font-bold text-teal-600">{percentage}%</StyledText>
+          <View style={{ marginBottom: 16, alignItems: 'center' }}>
+            <View style={{ marginBottom: 8, height: 80, width: 80, alignItems: 'center', justifyContent: 'center', borderRadius: 40, backgroundColor: colors.primaryLight }}>
+              <StyledText style={{ fontSize: 24, fontWeight: 'bold', color: colors.primary }}>{percentage}%</StyledText>
             </View>
-            <StyledText className="text-xs text-gray-500">{t('yourScorePercentage')}</StyledText>
+            <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>{t('yourScorePercentage')}</StyledText>
           </View>
 
           {/* Statistics Grid */}
-          <View className="mb-4 flex-row flex-wrap justify-between">
+          <View style={{ marginBottom: 16, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             {/* Correct Answers */}
-            <View className="mb-3 w-[48%] flex-row items-center rounded-xl bg-green-50 p-3">
-              <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-              <View className="ml-3">
-                <StyledText className="text-xs text-gray-600">{t('correct')}</StyledText>
-                <StyledText className="text-lg font-bold text-green-600">
+            <View style={{ marginBottom: 12, width: '48%', flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.success, padding: 12, opacity: 0.15 }}>
+              <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+              <View style={{ marginLeft: 12 }}>
+                <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>{t('correct')}</StyledText>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.success }}>
                   {result.correctAnswers}
                 </StyledText>
               </View>
             </View>
 
             {/* Wrong Answers */}
-            <View className="mb-3 w-[48%] flex-row items-center rounded-xl bg-red-50 p-3">
-              <Ionicons name="close-circle" size={24} color="#ef4444" />
-              <View className="ml-3">
-                <StyledText className="text-xs text-gray-600">{t('wrong')}</StyledText>
-                <StyledText className="text-lg font-bold text-red-600">{result.wrongAnswers}</StyledText>
+            <View style={{ marginBottom: 12, width: '48%', flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.error, padding: 12, opacity: 0.15 }}>
+              <Ionicons name="close-circle" size={24} color={colors.error} />
+              <View style={{ marginLeft: 12 }}>
+                <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>{t('wrong')}</StyledText>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.error }}>{result.wrongAnswers}</StyledText>
               </View>
             </View>
 
             {/* Skipped */}
-            <View className="mb-3 w-[48%] flex-row items-center rounded-xl bg-gray-100 p-3">
-              <Ionicons name="play-skip-forward-circle" size={24} color="#6b7280" />
-              <View className="ml-3">
-                <StyledText className="text-xs text-gray-600">{t('skipped')}</StyledText>
-                <StyledText className="text-lg font-bold text-gray-600">{result.skipped}</StyledText>
+            <View style={{ marginBottom: 12, width: '48%', flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.border, padding: 12 }}>
+              <Ionicons name="play-skip-forward-circle" size={24} color={colors.textSecondary} />
+              <View style={{ marginLeft: 12 }}>
+                <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>{t('skipped')}</StyledText>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{result.skipped}</StyledText>
               </View>
             </View>
 
             {/* Attempted */}
-            <View className="mb-3 w-[48%] flex-row items-center rounded-xl bg-blue-50 p-3">
-              <Ionicons name="flag" size={24} color="#3b82f6" />
-              <View className="ml-3">
-                <StyledText className="text-xs text-gray-600">{t('attempted')}</StyledText>
-                <StyledText className="text-lg font-bold text-blue-600">{result.attempted}</StyledText>
+            <View style={{ marginBottom: 12, width: '48%', flexDirection: 'row', alignItems: 'center', borderRadius: 12, backgroundColor: colors.info, padding: 12, opacity: 0.15 }}>
+              <Ionicons name="flag" size={24} color={colors.info} />
+              <View style={{ marginLeft: 12 }}>
+                <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>{t('attempted')}</StyledText>
+                <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.info }}>{result.attempted}</StyledText>
               </View>
             </View>
           </View>
 
           {/* Time Statistics */}
-          <View className="flex-row justify-between border-t border-gray-100 pt-4">
-            <View className="flex-1 items-center">
-              <Ionicons name="time" size={20} color="#14b8a6" />
-              <StyledText className="mt-1 text-xs text-gray-600">{t('timeTaken')}</StyledText>
-              <StyledText className="font-semibold text-gray-800">{result.timeTaken}</StyledText>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Ionicons name="time" size={20} color={colors.primary} />
+              <StyledText style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>{t('timeTaken')}</StyledText>
+              <StyledText style={{ fontWeight: '600', color: colors.text }}>{result.timeTaken}</StyledText>
             </View>
-            <View className="w-px bg-gray-200" />
-            <View className="flex-1 items-center">
-              <Ionicons name="timer-outline" size={20} color="#f59e0b" />
-              <StyledText className="mt-1 text-xs text-gray-600">{t('timeRemaining')}</StyledText>
-              <StyledText className="font-semibold text-gray-800">{result.timeRemaining}</StyledText>
+            <View style={{ width: 1, backgroundColor: colors.border }} />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Ionicons name="timer-outline" size={20} color={colors.warning} />
+              <StyledText style={{ marginTop: 4, fontSize: 12, color: colors.textSecondary }}>{t('timeRemaining')}</StyledText>
+              <StyledText style={{ fontWeight: '600', color: colors.text }}>{result.timeRemaining}</StyledText>
             </View>
           </View>
         </View>
       </ScrollView>
 
       {/* Action Buttons - Fixed at bottom */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white px-5 py-4 border-t border-gray-200">
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
           {/* Review Answers Button - Full width */}
           {result.questions && result.questions.length > 0 && (
             <TouchableOpacity
-              className="mb-3 w-full items-center rounded-xl bg-blue-500 py-4"
+              style={{ marginBottom: 12, width: '100%', alignItems: 'center', borderRadius: 12, backgroundColor: colors.info, paddingVertical: 16 }}
               onPress={handleDetailsPress}>
-              <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="eye-outline" size={20} color="#fff" />
-                <StyledText className="ml-2 text-base font-bold text-white">{t('reviewAnswers')}</StyledText>
+                <StyledText style={{ marginLeft: 8, fontSize: 16, fontWeight: 'bold', color: '#fff' }}>{t('reviewAnswers')}</StyledText>
               </View>
             </TouchableOpacity>
           )}
 
           {/* Home and Try Again buttons */}
-          <View className="flex-row items-center justify-between">
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TouchableOpacity
-              className="mr-3 flex-1 items-center rounded-xl bg-teal-500 py-4"
+              style={{ marginRight: 12, flex: 1, alignItems: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 16 }}
               onPress={handleHomePress}>
-              <StyledText className="text-base font-bold text-white">{t('home')}</StyledText>
+              <StyledText style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>{t('home')}</StyledText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 items-center rounded-xl border-2 border-teal-500 bg-white py-4"
+              style={{ flex: 1, alignItems: 'center', borderRadius: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.surface, paddingVertical: 16 }}
               onPress={() => {
                 resetQuiz();
                 navigation.navigate('Main', { screen: 'Prayer' });
               }}>
-              <StyledText className="text-base font-bold text-teal-600">{t('tryAgain')}</StyledText>
+              <StyledText style={{ fontSize: 16, fontWeight: 'bold', color: colors.primary }}>{t('tryAgain')}</StyledText>
             </TouchableOpacity>
           </View>
         </View>

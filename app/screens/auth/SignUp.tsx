@@ -12,6 +12,7 @@ import {
   ImageBackground,
   ImageSourcePropType,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -20,6 +21,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { api } from '../../utils/api';
 import { useCustomAlert } from '../../context/CustomAlertContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import StyledText from '../../components/StyledText';
 
 const bg = require('../../../assets/bg.png');
@@ -57,6 +59,7 @@ export default function SignUpScreen({
   const [loading, setLoading] = useState(false);
   const { showAlert } = useCustomAlert();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   // Password validation state
   const [passwordRequirements, setPasswordRequirements] = useState({
@@ -129,7 +132,8 @@ export default function SignUpScreen({
 
   return (
     <ImageBackground source={bg} resizeMode="cover" style={styles.background}>
-      <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}>
@@ -144,22 +148,22 @@ export default function SignUpScreen({
             {/* Logo Section */}
 
             {/* Sign Up Card */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               {/* Header */}
               <View style={styles.header}>
-                <StyledText style={styles.welcomeText}>{t('createAccount')}</StyledText>
-                <StyledText style={styles.subtitle}>{t('connectWithQuran')}</StyledText>
+                <StyledText style={[styles.welcomeText, { color: colors.text }]}>{t('createAccount')}</StyledText>
+                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>{t('connectWithQuran')}</StyledText>
               </View>
 
               {/* First Name Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <FontAwesome6 name="user" size={24} color="black" />
+                  <FontAwesome6 name="user" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('firstName')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={firstName}
                   onChangeText={setFirstName}
                   autoCapitalize="words"
@@ -168,14 +172,14 @@ export default function SignUpScreen({
               </View>
 
               {/* Last Name Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <FontAwesome6 name="user" size={24} color="black" />
+                  <FontAwesome6 name="user" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('lastName')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={lastName}
                   onChangeText={setLastName}
                   autoCapitalize="words"
@@ -184,14 +188,14 @@ export default function SignUpScreen({
               </View>
 
               {/* Email Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <MaterialCommunityIcons name="email-outline" size={24} color="black" />
+                  <MaterialCommunityIcons name="email-outline" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('enterEmailPlaceholder')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -201,14 +205,14 @@ export default function SignUpScreen({
               </View>
 
               {/* Password Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="lock-closed-outline" size={24} color="black" />
+                  <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('enterPasswordPlaceholder')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -224,17 +228,18 @@ export default function SignUpScreen({
 
               {/* Password Requirements */}
               {password.length > 0 && (
-                <View style={styles.requirementsContainer}>
-                  <StyledText style={styles.requirementsTitle}>{t('passwordRequirementsTitle')}</StyledText>
+                <View style={[styles.requirementsContainer, { backgroundColor: isDark ? colors.surface : '#F0F9FF', borderColor: isDark ? colors.border : '#BFDBFE' }]}>
+                  <StyledText style={[styles.requirementsTitle, { color: isDark ? colors.info : '#1E40AF' }]}>{t('passwordRequirementsTitle')}</StyledText>
 
                   <View style={styles.requirementRow}>
                     <Ionicons
                       name={passwordRequirements.minLength ? 'checkmark-circle' : 'close-circle'}
                       size={18}
-                      color={passwordRequirements.minLength ? '#10B981' : '#EF4444'}
+                      color={passwordRequirements.minLength ? colors.success : colors.error}
                     />
                     <StyledText style={[
                       styles.requirementText,
+                      { color: passwordRequirements.minLength ? colors.success : colors.textSecondary },
                       passwordRequirements.minLength && styles.requirementMet
                     ]}>
                       {t('passwordRule8Chars')}
@@ -245,10 +250,11 @@ export default function SignUpScreen({
                     <Ionicons
                       name={passwordRequirements.hasNumber ? 'checkmark-circle' : 'close-circle'}
                       size={18}
-                      color={passwordRequirements.hasNumber ? '#10B981' : '#EF4444'}
+                      color={passwordRequirements.hasNumber ? colors.success : colors.error}
                     />
                     <StyledText style={[
                       styles.requirementText,
+                      { color: passwordRequirements.hasNumber ? colors.success : colors.textSecondary },
                       passwordRequirements.hasNumber && styles.requirementMet
                     ]}>
                       {t('passwordRule1Number')}
@@ -259,10 +265,11 @@ export default function SignUpScreen({
                     <Ionicons
                       name={passwordRequirements.hasUpperCase ? 'checkmark-circle' : 'close-circle'}
                       size={18}
-                      color={passwordRequirements.hasUpperCase ? '#10B981' : '#EF4444'}
+                      color={passwordRequirements.hasUpperCase ? colors.success : colors.error}
                     />
                     <StyledText style={[
                       styles.requirementText,
+                      { color: passwordRequirements.hasUpperCase ? colors.success : colors.textSecondary },
                       passwordRequirements.hasUpperCase && styles.requirementMet
                     ]}>
                       {t('passwordRule1CapitalLetter')}
@@ -273,10 +280,11 @@ export default function SignUpScreen({
                     <Ionicons
                       name={passwordRequirements.hasSymbol ? 'checkmark-circle' : 'close-circle'}
                       size={18}
-                      color={passwordRequirements.hasSymbol ? '#10B981' : '#EF4444'}
+                      color={passwordRequirements.hasSymbol ? colors.success : colors.error}
                     />
                     <StyledText style={[
                       styles.requirementText,
+                      { color: passwordRequirements.hasSymbol ? colors.success : colors.textSecondary },
                       passwordRequirements.hasSymbol && styles.requirementMet
                     ]}>
                       {t('passwordRule1Symbol')}
@@ -286,14 +294,14 @@ export default function SignUpScreen({
               )}
 
               {/* Confirm Password Input */}
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="lock-closed-outline" size={24} color="black" />
+                  <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder={t('confirmNewPassword')}
-                  placeholderTextColor="#B0B0B0"
+                  placeholderTextColor={colors.textSecondary}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showConfirmPassword}
@@ -309,7 +317,7 @@ export default function SignUpScreen({
 
               {/* Sign Up Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, loading && styles.buttonDisabled]}
+                style={[styles.signUpButton, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
                 onPress={handleSignUp}
                 disabled={loading}>
                 {loading ? (
@@ -320,29 +328,29 @@ export default function SignUpScreen({
               </TouchableOpacity>
 
               {/* Divider */}
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               {/* Google Sign In */}
-              <TouchableOpacity style={styles.socialButton} onPress={onGoogleSignIn}>
-                <View style={styles.googleIcon}>
+              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onGoogleSignIn}>
+                <View style={[styles.googleIcon, { backgroundColor: colors.card }]}>
                   <Image source={gimg} resizeMode="contain" />
                 </View>
-                <StyledText style={styles.socialButtonText}>{t('continueWithGoogle')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithGoogle')}</StyledText>
               </TouchableOpacity>
 
               {/* Facebook Sign In */}
-              <TouchableOpacity style={styles.socialButton} onPress={onFacebookSignIn}>
+              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onFacebookSignIn}>
                 <View style={styles.facebookIcon}>
                   <StyledText style={styles.fText}>f</StyledText>
                 </View>
-                <StyledText style={styles.socialButtonText}>{t('continueWithFacebook')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithFacebook')}</StyledText>
               </TouchableOpacity>
 
               {/* Sign In Link */}
               <View style={styles.signInContainer}>
-                <StyledText style={styles.signInPrompt}>{t('alreadyHaveAccountPrompt')}</StyledText>
+                <StyledText style={[styles.signInPrompt, { color: colors.textSecondary }]}>{t('alreadyHaveAccountPrompt')}</StyledText>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <StyledText style={styles.signInLink}>{t('signIn')}</StyledText>
+                  <StyledText style={[styles.signInLink, { color: colors.text }]}>{t('signIn')}</StyledText>
                 </TouchableOpacity>
               </View>
             </View>

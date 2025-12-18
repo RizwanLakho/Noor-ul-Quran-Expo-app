@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { api } from '../../utils/api';
 import { useCustomAlert } from '../../context/CustomAlertContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import StyledText from '../../components/StyledText';
 
 const bg = require('../../../assets/bg.png');
@@ -49,6 +51,7 @@ export default function EmailVerificationScreen({
   const [verifying, setVerifying] = useState(false);
   const { showAlert } = useCustomAlert();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   const handleVerifyCode = async () => {
     if (verificationCode.length !== 6) {
@@ -107,7 +110,8 @@ export default function EmailVerificationScreen({
 
   return (
     <ImageBackground source={bg} resizeMode="cover" style={styles.background}>
-      <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
@@ -115,30 +119,30 @@ export default function EmailVerificationScreen({
           </View>
 
           {/* Main Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card }]}>
             {/* Icon */}
             <View style={styles.iconContainer}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="mail-outline" size={60} color="#2EBBC3" />
+              <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#E0F5F6', borderColor: colors.primary }]}>
+                <Ionicons name="mail-outline" size={60} color={colors.primary} />
               </View>
             </View>
 
             {/* Header */}
-            <StyledText style={styles.title}>{t('checkYourEmail')}</StyledText>
-            <StyledText style={styles.subtitle}>
+            <StyledText style={[styles.title, { color: colors.text }]}>{t('checkYourEmail')}</StyledText>
+            <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>
               {t('sentVerificationCodeTo')}{'\n'}
-              <StyledText style={styles.email}>{email}</StyledText>
+              <StyledText style={[styles.email, { color: colors.primary }]}>{email}</StyledText>
             </StyledText>
 
             {/* Code Input */}
             <View style={styles.codeInputContainer}>
-              <StyledText style={styles.codeInputLabel}>{t('enterVerificationCode')}</StyledText>
+              <StyledText style={[styles.codeInputLabel, { color: colors.text }]}>{t('enterVerificationCode')}</StyledText>
               <TextInput
-                style={styles.codeInput}
+                style={[styles.codeInput, { backgroundColor: isDark ? colors.surface : '#F9FAFB', borderColor: colors.border, color: colors.text }]}
                 value={verificationCode}
                 onChangeText={(text) => setVerificationCode(text.toUpperCase())}
                 placeholder={t('verificationCodePlaceholder')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
                 maxLength={6}
                 autoCapitalize="characters"
                 keyboardType="default"
@@ -149,7 +153,7 @@ export default function EmailVerificationScreen({
 
             {/* Verify Button */}
             <TouchableOpacity
-              style={[styles.verifyButton, (verifying || verificationCode.length !== 6) && styles.buttonDisabled]}
+              style={[styles.verifyButton, { backgroundColor: colors.primary }, (verifying || verificationCode.length !== 6) && styles.buttonDisabled]}
               onPress={handleVerifyCode}
               disabled={verifying || verificationCode.length !== 6}>
               {verifying ? (
@@ -163,24 +167,24 @@ export default function EmailVerificationScreen({
             </TouchableOpacity>
 
             {/* Instructions */}
-            <View style={styles.instructionsContainer}>
+            <View style={[styles.instructionsContainer, { backgroundColor: isDark ? colors.surface : '#F0F9FF', borderColor: isDark ? colors.border : '#BFDBFE' }]}>
               <View style={styles.instructionRow}>
-                <Ionicons name="mail" size={20} color="#10B981" />
-                <StyledText style={styles.instructionText}>
+                <Ionicons name="mail" size={20} color={colors.success} />
+                <StyledText style={[styles.instructionText, { color: colors.text }]}>
                   {t('checkEmailForCode')}
                 </StyledText>
               </View>
 
               <View style={styles.instructionRow}>
-                <Ionicons name="time" size={20} color="#10B981" />
-                <StyledText style={styles.instructionText}>
+                <Ionicons name="time" size={20} color={colors.success} />
+                <StyledText style={[styles.instructionText, { color: colors.text }]}>
                   {t('codeExpiresIn24Hours')}
                 </StyledText>
               </View>
 
               <View style={styles.instructionRow}>
-                <Ionicons name="alert-circle" size={20} color="#10B981" />
-                <StyledText style={styles.instructionText}>
+                <Ionicons name="alert-circle" size={20} color={colors.success} />
+                <StyledText style={[styles.instructionText, { color: colors.text }]}>
                   {t('checkSpamFolder')}
                 </StyledText>
               </View>
@@ -188,29 +192,29 @@ export default function EmailVerificationScreen({
 
             {/* Resend Button */}
             <TouchableOpacity
-              style={[styles.resendButton, loading && styles.buttonDisabled]}
+              style={[styles.resendButton, { backgroundColor: colors.card, borderColor: colors.primary }, loading && styles.buttonDisabled]}
               onPress={handleResendEmail}
               disabled={loading}>
               {loading ? (
-                <ActivityIndicator color="#2EBBC3" />
+                <ActivityIndicator color={colors.primary} />
               ) : (
                 <>
-                  <Ionicons name="refresh" size={20} color="#2EBBC3" />
-                  <StyledText style={styles.resendButtonText}>{t('resendCode')}</StyledText>
+                  <Ionicons name="refresh" size={20} color={colors.primary} />
+                  <StyledText style={[styles.resendButtonText, { color: colors.primary }]}>{t('resendCode')}</StyledText>
                 </>
               )}
             </TouchableOpacity>
 
             {/* Back to Login */}
-            <TouchableOpacity style={styles.loginButton} onPress={handleBackToLogin}>
+            <TouchableOpacity style={[styles.loginButton, { backgroundColor: colors.primary }]} onPress={handleBackToLogin}>
               <StyledText style={styles.loginButtonText}>{t('backToLogin')}</StyledText>
             </TouchableOpacity>
           </View>
 
           {/* Info Box */}
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#3B82F6" />
-            <StyledText style={styles.infoText}>
+          <View style={[styles.infoBox, { backgroundColor: isDark ? colors.surface : '#DBEAFE', borderColor: isDark ? colors.border : '#93C5FD' }]}>
+            <Ionicons name="information-circle" size={20} color={colors.info} />
+            <StyledText style={[styles.infoText, { color: isDark ? colors.info : '#1E40AF' }]}>
               {t('postVerificationInfo')}
             </StyledText>
           </View>

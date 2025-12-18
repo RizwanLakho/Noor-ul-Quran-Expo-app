@@ -147,9 +147,11 @@ export default function App() {
 
   if (showOnboarding === null || !fontsLoaded) {
     return (
-      <LoadingScreen
-        message={!fontsLoaded ? 'Loading fonts...' : 'Preparing your Quran experience...'}
-      />
+      <ThemeProvider>
+        <LoadingScreen
+          message={!fontsLoaded ? 'Loading fonts...' : 'Preparing your Quran experience...'}
+        />
+      </ThemeProvider>
     );
   }
 

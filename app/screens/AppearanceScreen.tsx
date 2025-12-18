@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -80,17 +81,17 @@ export default function AppearanceScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Header */}
-      <View className="flex-row items-center border-b border-gray-100 bg-white px-4 py-4">
+      <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, paddingVertical: 16 }}>
         <TouchableOpacity
-          className="h-10 w-10 items-center justify-center"
+          style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
           onPress={() => navigation?.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#333" />
+          <Ionicons name="chevron-back" size={28} color={colors.primary} />
         </TouchableOpacity>
-        <StyledText className="ml-2 text-lg font-bold text-gray-900">{t('appearance')}</StyledText>
+        <StyledText style={{ marginLeft: 8, fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t('appearance')}</StyledText>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

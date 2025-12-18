@@ -508,8 +508,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingVertical: 16,
   },
   title: {
     fontSize: 28,
@@ -595,7 +594,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   // Result and history card styles moved to separate components
   emptyContainer: {

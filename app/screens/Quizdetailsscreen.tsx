@@ -3,11 +3,13 @@ import { View, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuiz } from '../context/QuizContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import StyledText from '../components/StyledText';
 
 export default function QuizDetailsScreen({ navigation, route }) {
   const { resetQuiz } = useQuiz();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const { result } = route.params || {};
 
   // If no result data, navigate back
@@ -27,9 +29,13 @@ export default function QuizDetailsScreen({ navigation, route }) {
   };
 
   const getStatusColor = (userAnswer) => {
-    if (userAnswer.skipped) return 'bg-gray-100';
-    if (userAnswer.isCorrect) return 'bg-green-50';
-    return 'bg-red-50';
+    if (userAnswer.skipped) {
+      return { backgroundColor: isDark ? '#4B5563' : '#F3F4F6' };
+    }
+    if (userAnswer.isCorrect) {
+      return { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' };
+    }
+    return { backgroundColor: isDark ? '#7F1D1D' : '#FEF2F2' };
   };
 
   const getStatusText = (userAnswer) => {
@@ -59,30 +65,30 @@ export default function QuizDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="border-b border-gray-100 bg-white px-5 pb-4 pt-12">
-        <View className="flex-row items-center justify-between">
+      <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingBottom: 16, paddingTop: 48 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <StyledText className="text-lg font-semibold text-gray-800">{t('details')}</StyledText>
-          <View className="w-6" />
+          <StyledText style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{t('details')}</StyledText>
+          <View style={{ width: 24 }} />
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 py-6">
+      <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingVertical: 24 }}>
         {/* Category Header */}
-        <View className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
-          <View className="flex-row items-center justify-between">
+        <View style={{ marginBottom: 20, borderRadius: 16, backgroundColor: colors.card, padding: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View>
-              <StyledText className="mb-1 text-xs text-gray-500">{t('category')}</StyledText>
-              <StyledText className="text-xl font-bold text-gray-800">{result.category}</StyledText>
+              <StyledText style={{ marginBottom: 4, fontSize: 12, color: colors.textSecondary }}>{t('category')}</StyledText>
+              <StyledText style={{ fontSize: 20, fontWeight: 'bold', color: colors.text }}>{result.category}</StyledText>
             </View>
-            <View className="rounded-full bg-teal-100 px-4 py-2">
-              <StyledText className="font-bold text-teal-700">
+            <View style={{ borderRadius: 20, backgroundColor: colors.primaryLight, paddingHorizontal: 16, paddingVertical: 8 }}>
+              <StyledText style={{ fontWeight: 'bold', color: colors.primary }}>
                 {result.correctAnswers}/{result.totalQuestions}
               </StyledText>
             </View>
@@ -106,71 +112,68 @@ export default function QuizDetailsScreen({ navigation, route }) {
           return (
             <View
               key={question.id}
-              className={`mb-4 rounded-2xl p-4 shadow-sm ${getStatusColor(answerData)}`}>
+              style={{ marginBottom: 16, borderRadius: 16, padding: 16, ...getStatusColor(answerData) }}>
               {/* Question Header */}
-              <View className="mb-3 flex-row items-start justify-between">
-                <View className="mr-3 flex-1">
-                  <View className="mb-2 flex-row items-center">
-                    <View className="mr-2 h-6 w-6 items-center justify-center rounded-full bg-teal-500">
-                      <StyledText className="text-xs font-bold text-white">{index + 1}</StyledText>
+              <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <View style={{ marginRight: 12, flex: 1 }}>
+                  <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ marginRight: 8, height: 24, width: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary }}>
+                      <StyledText style={{ fontSize: 12, fontWeight: 'bold', color: '#fff' }}>{index + 1}</StyledText>
                     </View>
-                    <StyledText className="text-xs font-semibold text-gray-600">{t('question')}</StyledText>
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{t('question')}</StyledText>
                   </View>
-                  <StyledText className="text-sm leading-5 text-gray-800">{question.question}</StyledText>
+                  <StyledText style={{ fontSize: 14, lineHeight: 20, color: colors.text }}>{question.question}</StyledText>
                 </View>
                 {getStatusIcon(answerData)}
               </View>
 
               {/* Answers Section */}
-              <View className="border-t border-white pt-3">
+              <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 }}>
                 {!answerData.skipped ? (
                   <>
                     {/* User Answer */}
-                    <View className="mb-2 flex-row items-center">
+                    <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
                       <Ionicons
                         name={answerData.isCorrect ? 'checkmark-circle' : 'close-circle'}
                         size={16}
-                        color={answerData.isCorrect ? '#10b981' : '#ef4444'}
+                        color={answerData.isCorrect ? colors.success : colors.error}
                       />
-                      <StyledText className="ml-2 mr-2 text-xs text-gray-600">{t('yourAnswer')}</StyledText>
-                      <StyledText
-                        className={`flex-1 text-sm font-semibold ${
-                          answerData.isCorrect ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                      <StyledText style={{ marginLeft: 8, marginRight: 8, fontSize: 12, color: colors.textSecondary }}>{t('yourAnswer')}</StyledText>
+                      <StyledText style={{ flex: 1, fontSize: 14, fontWeight: '600', color: answerData.isCorrect ? colors.success : colors.error }}>
                         {getAnswerText(question, answerData.selectedOptionId)}
                       </StyledText>
                     </View>
 
                     {/* Correct Answer (if wrong) */}
                     {!answerData.isCorrect && (
-                      <View className="flex-row items-center">
-                        <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                        <StyledText className="ml-2 mr-2 text-xs text-gray-600">{t('correctAnswer')}</StyledText>
-                        <StyledText className="flex-1 text-sm font-semibold text-green-600">
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                        <StyledText style={{ marginLeft: 8, marginRight: 8, fontSize: 12, color: colors.textSecondary }}>{t('correctAnswer')}</StyledText>
+                        <StyledText style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.success }}>
                           {getCorrectAnswer(question)}
                         </StyledText>
                       </View>
                     )}
 
                     {/* Time Taken */}
-                    <View className="mt-2 flex-row items-center">
-                      <Ionicons name="time-outline" size={16} color="#6b7280" />
-                      <StyledText className="ml-2 text-xs text-gray-500">
+                    <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                      <StyledText style={{ marginLeft: 8, fontSize: 12, color: colors.textSecondary }}>
                         {t('time')} {answerData.timeTaken}s
                       </StyledText>
                     </View>
                   </>
                 ) : (
                   <>
-                    <View className="mb-2 flex-row items-center">
-                      <Ionicons name="information-circle" size={16} color="#6b7280" />
-                      <StyledText className="ml-2 text-xs text-gray-500">{t('questionSkipped')}</StyledText>
+                    <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="information-circle" size={16} color={colors.textSecondary} />
+                      <StyledText style={{ marginLeft: 8, fontSize: 12, color: colors.textSecondary }}>{t('questionSkipped')}</StyledText>
                     </View>
                     {/* Show correct answer for skipped questions */}
-                    <View className="flex-row items-center">
-                      <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                      <StyledText className="ml-2 mr-2 text-xs text-gray-600">{t('correctAnswer')}</StyledText>
-                      <StyledText className="flex-1 text-sm font-semibold text-green-600">
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <StyledText style={{ marginLeft: 8, marginRight: 8, fontSize: 12, color: colors.textSecondary }}>{t('correctAnswer')}</StyledText>
+                      <StyledText style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.success }}>
                         {getCorrectAnswer(question)}
                       </StyledText>
                     </View>
@@ -179,23 +182,26 @@ export default function QuizDetailsScreen({ navigation, route }) {
               </View>
 
               {/* Status Badge */}
-              <View className="absolute right-4 top-4">
+              <View style={{ position: 'absolute', right: 16, top: 16 }}>
                 <View
-                  className={`rounded-full px-3 py-1 ${
-                    answerData.skipped
-                      ? 'bg-gray-200'
+                  style={{
+                    borderRadius: 20,
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    backgroundColor: answerData.skipped
+                      ? colors.border
                       : answerData.isCorrect
-                        ? 'bg-green-100'
-                        : 'bg-red-100'
-                  }`}>
+                        ? colors.success
+                        : colors.error,
+                  }}>
                   <StyledText
-                    className={`text-xs font-semibold ${
-                      answerData.skipped
-                        ? 'text-gray-600'
-                        : answerData.isCorrect
-                          ? 'text-green-700'
-                          : 'text-red-700'
-                    }`}>
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: answerData.skipped
+                        ? colors.text
+                        : '#fff',
+                    }}>
                     {getStatusText(answerData)}
                   </StyledText>
                 </View>
@@ -204,23 +210,23 @@ export default function QuizDetailsScreen({ navigation, route }) {
           );
         })}
 
-        <View className="h-6" />
+        <View style={{ height: 24 }} />
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View className="border-t border-gray-100 bg-white px-5 py-4">
-        <View className="flex-row items-center justify-between">
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity
-            className="mr-3 flex-1 flex-row items-center justify-center rounded-xl bg-teal-500 py-4"
+            style={{ marginRight: 12, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 16 }}
             onPress={handleHomePress}>
-            <StyledText className="mr-2 text-base font-bold text-white">{t('home')}</StyledText>
+            <StyledText style={{ marginRight: 8, fontSize: 16, fontWeight: 'bold', color: '#fff' }}>{t('home')}</StyledText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 flex-row items-center justify-center rounded-xl border-2 border-teal-500 bg-white py-4"
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.surface, paddingVertical: 16 }}
             onPress={handleTryAgain}>
-            <StyledText className="mr-2 text-base font-bold text-teal-600">{t('tryAgain')}</StyledText>
-            <Ionicons name="refresh" size={18} color="#14b8a6" />
+            <StyledText style={{ marginRight: 8, fontSize: 16, fontWeight: 'bold', color: colors.primary }}>{t('tryAgain')}</StyledText>
+            <Ionicons name="refresh" size={18} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>

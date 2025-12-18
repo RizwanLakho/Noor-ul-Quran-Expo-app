@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { useAudioPlayer, AudioSource } from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
@@ -31,11 +31,7 @@ export default function QuranAudioPlayer({
   const { quranAppearance } = useSettings();
   const { t } = useLanguage();
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [position, setPosition] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [autoPlay, setAutoPlay] = useState(false);
 
@@ -43,48 +39,15 @@ export default function QuranAudioPlayer({
   const selectedReciter = quranAppearance.selectedReciter || 'Alafasy_128kbps';
 
   const currentAyah = ayahs[currentIndex];
+  const audioUrl = currentAyah ? getAudioUrl(currentAyah.sura, currentAyah.aya, selectedReciter) : '';
+  const player = useAudioPlayer(audioUrl);
 
-  // Cleanup sound on unmount
+  const hasPlayedRef = useRef(false);
+
+  // Listen for when audio finishes
   useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
-
-  // Configure audio mode
-  useEffect(() => {
-    const configureAudio = async () => {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
-    };
-    configureAudio();
-  }, []);
-
-  // Handle playback status updates
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      if (status.error) {
-        setError(t('playbackError').replace('{error}', status.error));
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    setIsPlaying(status.isPlaying);
-    setPosition(status.positionMillis);
-    setDuration(status.durationMillis || 0);
-
-    // When audio finishes, go to next ayah
-    if (status.didJustFinish && !status.isLooping) {
-      setIsPlaying(false);
-      setPosition(0);
-
+    if (player.status === 'idle' && hasPlayedRef.current && player.currentTime === 0) {
+      hasPlayedRef.current = false;
       // Auto-play next ayah if enabled
       if (autoPlay && currentIndex < ayahs.length - 1) {
         const nextIndex = currentIndex + 1;
@@ -95,7 +58,7 @@ export default function QuranAudioPlayer({
         }, 500);
       }
     }
-  };
+  }, [player.status, player.currentTime, autoPlay, currentIndex, ayahs.length]);
 
   const playAyahAtIndex = async (index: number) => {
     try {
@@ -109,21 +72,8 @@ export default function QuranAudioPlayer({
         return;
       }
 
-      // Unload previous sound
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      // Load and play new audio
-      const audioUrl = getAudioUrl(ayah.sura, ayah.aya, selectedReciter);
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-
-      setSound(newSound);
+      player.play();
+      hasPlayedRef.current = true;
       setIsLoading(false);
     } catch (err) {
       setError(t('failedToLoadAudio'));
@@ -132,34 +82,24 @@ export default function QuranAudioPlayer({
   };
 
   const playCurrentAyah = async () => {
-    if (sound) {
-      const status = await sound.getStatusAsync();
-      if (status.isLoaded && !status.isPlaying) {
-        await sound.playAsync();
-        return;
-      }
+    if (player.playing) {
+      return;
     }
     await playAyahAtIndex(currentIndex);
   };
 
-  const pauseAudio = async () => {
-    if (sound) {
-      await sound.pauseAsync();
-    }
+  const pauseAudio = () => {
+    player.pause();
   };
 
-  const stopAudio = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.setPositionAsync(0);
-      setPosition(0);
-      setIsPlaying(false);
-    }
+  const stopAudio = () => {
+    player.pause();
+    player.seekTo(0);
   };
 
   const togglePlayPause = async () => {
-    if (isPlaying) {
-      await pauseAudio();
+    if (player.playing) {
+      pauseAudio();
     } else {
       await playCurrentAyah();
     }
@@ -169,7 +109,7 @@ export default function QuranAudioPlayer({
     if (currentIndex > 0) {
       const prevIndex = currentIndex - 1;
       onIndexChange(prevIndex);
-      if (isPlaying || autoPlay) {
+      if (player.playing || autoPlay) {
         await playAyahAtIndex(prevIndex);
       }
     }
@@ -179,21 +119,23 @@ export default function QuranAudioPlayer({
     if (currentIndex < ayahs.length - 1) {
       const nextIndex = currentIndex + 1;
       onIndexChange(nextIndex);
-      if (isPlaying || autoPlay) {
+      if (player.playing || autoPlay) {
         await playAyahAtIndex(nextIndex);
       }
     }
   };
 
   // Format time in mm:ss
-  const formatTime = (millis: number): string => {
-    const totalSeconds = Math.floor(millis / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!visible || !currentAyah) return null;
+
+  const duration = player.duration || 0;
+  const position = player.currentTime || 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
@@ -222,7 +164,7 @@ export default function QuranAudioPlayer({
           <TouchableOpacity
             style={[styles.controlButton, { backgroundColor: colors.primaryLight }]}
             onPress={stopAudio}
-            disabled={isLoading || !sound}>
+            disabled={isLoading}>
             <Ionicons name="stop" size={20} color={colors.primary} />
           </TouchableOpacity>
 
@@ -234,7 +176,7 @@ export default function QuranAudioPlayer({
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
+                name={player.playing ? 'pause' : 'play'}
                 size={28}
                 color="#FFFFFF"
               />

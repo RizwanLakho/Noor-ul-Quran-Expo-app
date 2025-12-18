@@ -163,9 +163,9 @@ export default function HomeScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <SafeAreaView className="mb-2 mt-5">
-        <ScrollView showsVerticalScrollIndicator={false}>
+      <SafeAreaView edges={['top']}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -676,7 +676,6 @@ export default function HomeScreen({
               </View>
             </View>
           </View>
-          <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
     </View>

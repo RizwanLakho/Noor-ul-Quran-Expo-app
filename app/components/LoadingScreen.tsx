@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, Animated, Easing, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 interface LoadingScreenProps {
   message?: string;
 }
 
 export default function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
+  const { colors, isDark } = useTheme();
   const spinValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
   const fadeValue = useRef(new Animated.Value(0)).current;
@@ -72,10 +74,15 @@ export default function LoadingScreen({ message = 'Loading...' }: LoadingScreenP
     outputRange: ['0deg', '360deg'],
   });
 
+  // Define gradient colors based on theme
+  const gradientColors = isDark
+    ? ['#0F172A', '#1E293B', '#334155']
+    : ['#F0FDFA', '#CCFBF1', '#99F6E4'];
+
   return (
     <LinearGradient
-      colors={['#F0FDFA', '#CCFBF1', '#99F6E4']}
-      style={styles.container}
+      colors={gradientColors}
+      style={[styles.container, { backgroundColor: colors.background }]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
@@ -179,15 +186,15 @@ export default function LoadingScreen({ message = 'Loading...' }: LoadingScreenP
         </View>
 
         {/* Loading Text */}
-        <Text style={styles.loadingText}>{message}</Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>{message}</Text>
 
         {/* App Tagline */}
-        <Text style={styles.appName}>Noor ul-Quran</Text>
+        <Text style={[styles.appName, { color: colors.primary }]}>Noor ul-Quran</Text>
       </Animated.View>
 
       {/* Bottom Tagline */}
       <View style={styles.bottomContainer}>
-        <Text style={styles.tagline}>Reading the Quran, One Ayah at a Time</Text>
+        <Text style={[styles.tagline, { color: colors.primary }]}>Reading the Quran, One Ayah at a Time</Text>
       </View>
     </LinearGradient>
   );
@@ -266,12 +273,10 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0F766E',
     marginBottom: 8,
   },
   appName: {
     fontSize: 14,
-    color: '#14B8A6',
     textAlign: 'center',
     paddingHorizontal: 32,
     marginTop: 8,
@@ -284,7 +289,6 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 12,
-    color: '#14B8A6',
     opacity: 0.7,
   },
 });

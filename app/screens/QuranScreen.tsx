@@ -19,12 +19,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/ApiService';
 import { useCustomAlert } from '../context/CustomAlertContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import StyledText from '../components/StyledText';
 import type { Surah, RevelationType, UserData } from './types/quran.types';
 
 export default function QuranScreen({ navigation }: any) {
   const { showAlert } = useCustomAlert();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   // State Management
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -441,28 +443,29 @@ export default function QuranScreen({ navigation }: any) {
   const renderSurahItem = ({ item }: { item: Surah }) => (
     <TouchableOpacity
       onPress={() => handleSurahPress(item)}
-      className="flex-row items-center justify-between border-b border-gray-100 px-5 py-4"
+      className="flex-row items-center justify-between px-5 py-4"
+      style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       activeOpacity={0.7}>
       {/* Surah Number */}
       <View className="w-8">
-        <StyledText className="text-sm font-medium text-gray-500">{item.surah_number}</StyledText>
+        <StyledText className="text-sm font-medium" style={{ color: colors.textSecondary }}>{item.surah_number}</StyledText>
       </View>
 
       {/* Surah Info */}
       <View className="flex-1 px-4">
-        <StyledText className="mb-1 text-base font-semibold text-teal-700">
+        <StyledText className="mb-1 text-base font-semibold" style={{ color: colors.primary }}>
           {item.surah_name_english}
         </StyledText>
         <View className="flex-row items-center">
-          <StyledText className="mr-2 text-xs text-gray-500">{t(item.revelation_type.toLowerCase())}</StyledText>
+          <StyledText className="mr-2 text-xs" style={{ color: colors.textSecondary }}>{t(item.revelation_type.toLowerCase())}</StyledText>
           <StyledText className="mr-2 text-xs">{getRevelationIcon(item.revelation_type)}</StyledText>
-          <StyledText className="text-xs text-gray-400">{item.total_ayahs} {t('ayahs')}</StyledText>
+          <StyledText className="text-xs" style={{ color: colors.textSecondary }}>{item.total_ayahs} {t('ayahs')}</StyledText>
         </View>
       </View>
 
       {/* Arabic Name */}
       <View className="items-end">
-        <StyledText className="text-2xl" style={{ fontFamily: 'System' }}>
+        <StyledText className="text-2xl" style={{ fontFamily: 'System', color: colors.text }}>
           {item.surah_name_arabic}
         </StyledText>
       </View>
@@ -475,7 +478,8 @@ export default function QuranScreen({ navigation }: any) {
   const renderTopicItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() => handleTopicPress(item)}
-      className="flex-row items-center justify-between border-b border-gray-100 px-5 py-4"
+      className="flex-row items-center justify-between px-5 py-4"
+      style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       activeOpacity={0.7}>
       {/* Topic Icon */}
       <View className="mr-3 w-8 items-center">
@@ -484,7 +488,7 @@ export default function QuranScreen({ navigation }: any) {
 
       {/* Topic Info */}
       <View className="flex-1">
-        <StyledText className="mb-1 text-base font-semibold text-teal-700">
+        <StyledText className="mb-1 text-base font-semibold" style={{ color: colors.primary }}>
           {item.title}
         </StyledText>
         <View className="flex-row items-center">
@@ -500,14 +504,14 @@ export default function QuranScreen({ navigation }: any) {
             </View>
           )}
           {item.ayah_count && item.ayah_count !== '0' && (
-            <StyledText className="text-xs text-gray-400">{item.ayah_count} {t('ayahs')}</StyledText>
+            <StyledText className="text-xs" style={{ color: colors.textSecondary }}>{item.ayah_count} {t('ayahs')}</StyledText>
           )}
         </View>
       </View>
 
       {/* Right Arrow */}
       <View className="items-end">
-        <StyledText className="text-xl text-gray-400">›</StyledText>
+        <StyledText className="text-xl" style={{ color: colors.textSecondary }}>›</StyledText>
       </View>
     </TouchableOpacity>
   );
@@ -518,25 +522,26 @@ export default function QuranScreen({ navigation }: any) {
   const renderJuzItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() => handleJuzPress(item)}
-      className="mx-5 mb-3 rounded-xl border border-gray-200 bg-white p-4"
+      className="mx-5 mb-3 rounded-xl p-4"
+      style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}
       activeOpacity={0.7}>
       <View className="flex-row items-center justify-between">
         {/* Juz Number Circle */}
-        <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-teal-100">
-          <StyledText className="text-lg font-bold text-teal-700">{item.juz_number}</StyledText>
+        <View className="mr-4 h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: colors.primaryLight + '40' }}>
+          <StyledText className="text-lg font-bold" style={{ color: colors.primary }}>{item.juz_number}</StyledText>
         </View>
 
         {/* Juz Info */}
         <View className="flex-1">
-          <StyledText className="mb-1 text-base font-bold text-gray-800">
+          <StyledText className="mb-1 text-base font-bold" style={{ color: colors.text }}>
             {item.juz_name_english || `${t('juzFull')} ${item.juz_number}`}
           </StyledText>
           {item.juz_name_arabic && (
-            <StyledText className="mb-2 text-sm text-gray-600" style={{ fontFamily: 'System' }}>
+            <StyledText className="mb-2 text-sm" style={{ fontFamily: 'System', color: colors.textSecondary }}>
               {item.juz_name_arabic}
             </StyledText>
           )}
-          <StyledText className="text-xs text-gray-500">
+          <StyledText className="text-xs" style={{ color: colors.textSecondary }}>
             {t('surah')} {item.starting_surah}:{item.starting_ayah} - {item.ending_surah}:{item.ending_ayah}
           </StyledText>
         </View>
@@ -553,12 +558,12 @@ export default function QuranScreen({ navigation }: any) {
    * Render list header with user info, search, and filters
    */
   const renderHeader = () => (
-    <View className="bg-white">
+    <View style={{ backgroundColor: colors.background }}>
       {/* Search Bar */}
       {showSearch && (
         <View className="px-5 pb-3">
-          <View className="flex-row items-center rounded-full bg-gray-100 px-4 py-3">
-            <StyledText className="mr-2 text-gray-400">🔍</StyledText>
+          <View className="flex-row items-center rounded-full px-4 py-3" style={{ backgroundColor: colors.surface }}>
+            <StyledText className="mr-2" style={{ color: colors.textSecondary }}>🔍</StyledText>
             <TextInput
               placeholder={
                 selectedFilter === 'Topics'
@@ -569,15 +574,16 @@ export default function QuranScreen({ navigation }: any) {
               }
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 text-sm text-gray-700"
-              placeholderTextColor="#9CA3AF"
+              className="flex-1 text-sm"
+              style={{ color: colors.text }}
+              placeholderTextColor={colors.textSecondary}
               autoFocus
               autoCapitalize="none"
               autoCorrect={false}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <StyledText className="text-lg text-gray-400">✕</StyledText>
+                <StyledText className="text-lg" style={{ color: colors.textSecondary }}>✕</StyledText>
               </TouchableOpacity>
             )}
           </View>
@@ -587,16 +593,21 @@ export default function QuranScreen({ navigation }: any) {
       {/* Last Read Section - Unified (Surahs, Juz, Topics) - Always Visible */}
       {!searchQuery && lastReadItems.length > 0 && (
         <View className="px-5 py-3">
-          <StyledText className="mb-3 text-xs font-medium text-gray-600">📚 {t('lastRead')}</StyledText>
+          <StyledText className="mb-3 text-xs font-medium" style={{ color: colors.textSecondary }}>📚 {t('lastRead')}</StyledText>
           <View className="flex-row flex-wrap">
             {lastReadItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={() => handleLastReadPress(item)}
-                className="mb-2 mr-2 flex-row items-center rounded-full border border-teal-200 bg-white px-3 py-2"
+                className="mb-2 mr-2 flex-row items-center rounded-full px-3 py-2"
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                  backgroundColor: colors.surface,
+                }}
                 activeOpacity={0.7}>
                 <StyledText className="mr-1 text-sm">{item.icon}</StyledText>
-                <StyledText className="text-xs font-medium text-teal-700">{item.name}</StyledText>
+                <StyledText className="text-xs font-medium" style={{ color: colors.primary }}>{item.name}</StyledText>
               </TouchableOpacity>
             ))}
           </View>
@@ -606,16 +617,21 @@ export default function QuranScreen({ navigation }: any) {
       {/* Quick Links Section - Dynamic based on history - Always Visible */}
       {!searchQuery && quickLinks.length > 0 && (
         <View className="px-5 py-3">
-          <StyledText className="mb-3 text-xs font-medium text-gray-600">⭐ {t('quickAccess')}</StyledText>
+          <StyledText className="mb-3 text-xs font-medium" style={{ color: colors.textSecondary }}>⭐ {t('quickAccess')}</StyledText>
           <View className="flex-row flex-wrap">
             {quickLinks.map((link, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={() => handleQuickLinkPress(link)}
-                className="mb-2 mr-2 flex-row items-center rounded-full border border-purple-200 bg-purple-50 px-3 py-2"
+                className="mb-2 mr-2 flex-row items-center rounded-full px-3 py-2"
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.primaryLight,
+                  backgroundColor: colors.primaryLight + '15',
+                }}
                 activeOpacity={0.7}>
                 <StyledText className="mr-1 text-sm">{link.icon}</StyledText>
-                <StyledText className="text-xs font-medium text-purple-700">{link.name}</StyledText>
+                <StyledText className="text-xs font-medium" style={{ color: colors.primary }}>{link.name}</StyledText>
               </TouchableOpacity>
             ))}
           </View>
@@ -623,62 +639,58 @@ export default function QuranScreen({ navigation }: any) {
       )}
 
       {/* Filter Tabs */}
-      <View className="flex-row items-center border-b border-gray-200 px-5 py-3">
+      <View className="flex-row items-center px-5 py-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TouchableOpacity
           onPress={() => setSelectedFilter('All')}
-          className={`mr-6 pb-2 ${selectedFilter === 'All' ? 'border-b-2 border-teal-600' : ''}`}>
+          className="mr-6 pb-2"
+          style={selectedFilter === 'All' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
-            className={`text-sm ${
-              selectedFilter === 'All' ? 'font-semibold text-teal-700' : 'text-gray-500'
-            }`}>
+            className="text-sm font-semibold"
+            style={{ color: selectedFilter === 'All' ? colors.primary : colors.textSecondary }}>
             {t('filterAll')}
           </StyledText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSelectedFilter('Meccan')}
-          className={`mr-6 pb-2 ${
-            selectedFilter === 'Meccan' ? 'border-b-2 border-teal-600' : ''
-          }`}>
+          className="mr-6 pb-2"
+          style={selectedFilter === 'Meccan' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
-            className={`text-sm ${
-              selectedFilter === 'Meccan' ? 'font-semibold text-teal-700' : 'text-gray-500'
-            }`}>
+            className="text-sm font-semibold"
+            style={{ color: selectedFilter === 'Meccan' ? colors.primary : colors.textSecondary }}>
             🕋 {t('filterMeccan')}
           </StyledText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSelectedFilter('Medinan')}
-          className={`mr-6 pb-2 ${
-            selectedFilter === 'Medinan' ? 'border-b-2 border-teal-600' : ''
-          }`}>
+          className="mr-6 pb-2"
+          style={selectedFilter === 'Medinan' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
-            className={`text-sm ${
-              selectedFilter === 'Medinan' ? 'font-semibold text-teal-700' : 'text-gray-500'
-            }`}>
+            className="text-sm font-semibold"
+            style={{ color: selectedFilter === 'Medinan' ? colors.primary : colors.textSecondary }}>
             🕌 {t('filterMedinan')}
           </StyledText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSelectedFilter('Topics')}
-          className={`mr-6 pb-2 ${selectedFilter === 'Topics' ? 'border-b-2 border-teal-600' : ''}`}>
+          className="mr-6 pb-2"
+          style={selectedFilter === 'Topics' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
-            className={`text-sm ${
-              selectedFilter === 'Topics' ? 'font-semibold text-teal-700' : 'text-gray-500'
-            }`}>
+            className="text-sm font-semibold"
+            style={{ color: selectedFilter === 'Topics' ? colors.primary : colors.textSecondary }}>
             📚 {t('topicsFilter')}
           </StyledText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSelectedFilter('Juz')}
-          className={`pb-2 ${selectedFilter === 'Juz' ? 'border-b-2 border-teal-600' : ''}`}>
+          className="pb-2"
+          style={selectedFilter === 'Juz' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
-            className={`text-sm ${
-              selectedFilter === 'Juz' ? 'font-semibold text-teal-700' : 'text-gray-500'
-            }`}>
+            className="text-sm font-semibold"
+            style={{ color: selectedFilter === 'Juz' ? colors.primary : colors.textSecondary }}>
             📖 {t('juzFilter')}
           </StyledText>
         </TouchableOpacity>
@@ -686,8 +698,8 @@ export default function QuranScreen({ navigation }: any) {
 
       {/* Search Results Info */}
       {searchQuery && (
-        <View className="border-b border-teal-100 bg-teal-50 px-5 py-2">
-          <StyledText className="text-sm text-teal-700">
+        <View className="px-5 py-2" style={{ borderBottomWidth: 1, borderBottomColor: colors.primaryLight, backgroundColor: colors.primaryLight + '15' }}>
+          <StyledText className="text-sm" style={{ color: colors.primary }}>
             {selectedFilter === 'Topics'
               ? `${filteredTopics.length} ${
                   filteredTopics.length !== 1 ? t('resultPlural') : t('resultSingular')
@@ -715,10 +727,10 @@ export default function QuranScreen({ navigation }: any) {
     return (
       <View className="items-center justify-center px-5 py-20">
         <StyledText className="mb-4 text-6xl">📖</StyledText>
-        <StyledText className="mb-2 text-lg font-semibold text-gray-700">
+        <StyledText className="mb-2 text-lg font-semibold" style={{ color: colors.text }}>
           {searchQuery ? t('noResultsFound') : t('noSurahsAvailable')}
         </StyledText>
-        <StyledText className="mb-4 text-center text-sm text-gray-500">
+        <StyledText className="mb-4 text-center text-sm" style={{ color: colors.textSecondary }}>
           {searchQuery
             ? t('noSurahsMatchingSearch').replace('{searchQuery}', searchQuery)
             : t('checkConnectionAndRetry')}
@@ -726,16 +738,18 @@ export default function QuranScreen({ navigation }: any) {
         {searchQuery ? (
           <TouchableOpacity
             onPress={() => setSearchQuery('')}
-            className="rounded-full bg-teal-600 px-6 py-3"
+            className="rounded-full px-6 py-3"
+            style={{ backgroundColor: colors.primary }}
             activeOpacity={0.8}>
-            <StyledText className="font-semibold text-white">{t('clearSearch')}</StyledText>
+            <StyledText className="font-semibold" style={{ color: colors.card }}>{t('clearSearch')}</StyledText>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             onPress={handleRefresh}
-            className="rounded-full bg-teal-600 px-6 py-3"
+            className="rounded-full px-6 py-3"
+            style={{ backgroundColor: colors.primary }}
             activeOpacity={0.8}>
-            <StyledText className="font-semibold text-white">{t('retry')}</StyledText>
+            <StyledText className="font-semibold" style={{ color: colors.card }}>{t('retry')}</StyledText>
           </TouchableOpacity>
         )}
       </View>
@@ -747,17 +761,17 @@ export default function QuranScreen({ navigation }: any) {
    */
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#0d9488" />
-        <StyledText className="mt-4 text-base text-gray-500">{t('loadingQuran')}</StyledText>
-        <StyledText className="mt-2 text-xs text-gray-400">{t('pleaseWait')}</StyledText>
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <StyledText className="mt-4 text-base" style={{ color: colors.textSecondary }}>{t('loadingQuran')}</StyledText>
+        <StyledText className="mt-2 text-xs" style={{ color: colors.textSecondary }}>{t('pleaseWait')}</StyledText>
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={['top']}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
       {/* Main Content - Surah/Topics/Juz List */}
       <FlatList

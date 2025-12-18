@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { useAudioPlayer, AudioSource } from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
@@ -33,99 +33,40 @@ export default function AudioPlayer({
   const { quranAppearance } = useSettings();
   const { t } = useLanguage();
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [position, setPosition] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
   // Get selected reciter from settings or default to Alafasy
   const selectedReciter = quranAppearance.selectedReciter || 'Alafasy_128kbps';
 
-  // Cleanup sound on unmount
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
+  const audioUrl = getAudioUrl(surahNumber, ayahNumber, selectedReciter);
+  const player = useAudioPlayer(audioUrl);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const hasPlayedRef = useRef(false);
 
   // Auto-play when ayah changes
   useEffect(() => {
+    hasPlayedRef.current = false;
     if (autoPlay && visible) {
       playAudio();
     }
   }, [surahNumber, ayahNumber, autoPlay, visible]);
 
-  // Configure audio mode
+  // Listen for when audio finishes
   useEffect(() => {
-    const configureAudio = async () => {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
-    };
-    configureAudio();
-  }, []);
-
-  // Handle playback status updates
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      if (status.error) {
-        setError(t('playbackError').replace('{error}', status.error));
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    setIsPlaying(status.isPlaying);
-    setPosition(status.positionMillis);
-    setDuration(status.durationMillis || 0);
-
-    // When audio finishes
-    if (status.didJustFinish && !status.isLooping) {
-      setIsPlaying(false);
-      setPosition(0);
+    if (player.status === 'idle' && hasPlayedRef.current && player.currentTime === 0) {
       if (onAyahComplete) {
         onAyahComplete();
       }
+      hasPlayedRef.current = false;
     }
-  };
+  }, [player.status, player.currentTime, onAyahComplete]);
 
   const playAudio = async () => {
     try {
       setError(null);
       setIsLoading(true);
-
-      // If sound exists and is paused, just resume
-      if (sound) {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded && !status.isPlaying) {
-          await sound.playAsync();
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // Unload previous sound if exists
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      // Load and play new audio
-      const audioUrl = getAudioUrl(surahNumber, ayahNumber, selectedReciter);
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-
-      setSound(newSound);
+      player.play();
+      hasPlayedRef.current = true;
       setIsLoading(false);
     } catch (err) {
       setError(t('failedToLoadAudio'));
@@ -133,38 +74,34 @@ export default function AudioPlayer({
     }
   };
 
-  const pauseAudio = async () => {
-    if (sound) {
-      await sound.pauseAsync();
-    }
+  const pauseAudio = () => {
+    player.pause();
   };
 
-  const stopAudio = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.setPositionAsync(0);
-      setPosition(0);
-      setIsPlaying(false);
-    }
+  const stopAudio = () => {
+    player.pause();
+    player.seekTo(0);
   };
 
-  const togglePlayPause = async () => {
-    if (isPlaying) {
-      await pauseAudio();
+  const togglePlayPause = () => {
+    if (player.playing) {
+      pauseAudio();
     } else {
-      await playAudio();
+      playAudio();
     }
   };
 
   // Format time in mm:ss
-  const formatTime = (millis: number): string => {
-    const totalSeconds = Math.floor(millis / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!visible) return null;
+
+  const duration = player.duration || 0;
+  const position = player.currentTime || 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
@@ -190,7 +127,7 @@ export default function AudioPlayer({
           <TouchableOpacity
             style={[styles.controlButton, { backgroundColor: colors.primaryLight }]}
             onPress={stopAudio}
-            disabled={isLoading || !sound}>
+            disabled={isLoading}>
             <Ionicons name="stop" size={20} color={colors.primary} />
           </TouchableOpacity>
 
@@ -202,7 +139,7 @@ export default function AudioPlayer({
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
+                name={player.playing ? 'pause' : 'play'}
                 size={28}
                 color="#FFFFFF"
               />

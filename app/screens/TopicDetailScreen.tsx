@@ -14,6 +14,7 @@ import { apiService } from '../services/ApiService';
 import { useCustomAlert } from '../context/CustomAlertContext';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import StyledText from '../components/StyledText';
 
 export default function TopicDetailScreen({ route, navigation }: any) {
@@ -21,6 +22,7 @@ export default function TopicDetailScreen({ route, navigation }: any) {
   const { showAlert } = useCustomAlert();
   const { quranAppearance } = useSettings();
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [topic, setTopic] = useState<any>(null);
@@ -145,11 +147,11 @@ export default function TopicDetailScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
-        <StatusBar barStyle="dark-content" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#14b8a6" />
-          <StyledText className="mt-4 text-gray-600">{t('loadingTopicEllipsis')}</StyledText>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <StyledText style={{ marginTop: 16, color: colors.textSecondary }}>{t('loadingTopicEllipsis')}</StyledText>
         </View>
       </SafeAreaView>
     );
@@ -157,13 +159,13 @@ export default function TopicDetailScreen({ route, navigation }: any) {
 
   if (!topic) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View className="flex-1 items-center justify-center px-6">
-          <StyledText className="text-lg text-gray-700">{t('topicNotFound')}</StyledText>
+          <StyledText style={{ fontSize: 18, color: colors.text }}>{t('topicNotFound')}</StyledText>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            className="mt-4 rounded-lg bg-teal-500 px-6 py-3">
-            <StyledText className="font-semibold text-white">{t('goBack')}</StyledText>
+            style={{ marginTop: 16, borderRadius: 8, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12 }}>
+            <StyledText style={{ fontWeight: '600', color: '#FFFFFF' }}>{t('goBack')}</StyledText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -171,42 +173,46 @@ export default function TopicDetailScreen({ route, navigation }: any) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="border-b border-gray-200 bg-white px-5 pb-4 pt-2">
+      <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
         <View className="flex-row items-center justify-between">
           <TouchableOpacity onPress={() => navigation.goBack()} className="mr-3">
-            <Ionicons name="arrow-back" size={24} color="#0f766e" />
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
 
           <View className="flex-1">
-            <StyledText className="text-lg font-bold text-gray-800" numberOfLines={1}>
+            <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }} numberOfLines={1}>
               {topic.title}
             </StyledText>
             {topic.category && (
-              <StyledText className="text-xs text-gray-500 capitalize">{topic.category}</StyledText>
+              <StyledText style={{ fontSize: 12, color: colors.textSecondary, textTransform: 'capitalize' }}>{topic.category}</StyledText>
             )}
           </View>
 
           <TouchableOpacity>
-            <Ionicons name="bookmark-outline" size={24} color="#0f766e" />
+            <Ionicons name="bookmark-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Progress Bar */}
       {progressPercentage > 0 && (
-        <View className="bg-white px-5 py-3 border-b border-gray-200">
+        <View style={{ backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <View className="flex-row items-center justify-between mb-2">
-            <StyledText className="text-xs font-semibold text-gray-600">{t('readingProgress')}</StyledText>
-            <StyledText className="text-xs font-bold text-teal-600">{progressPercentage}%</StyledText>
+            <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{t('readingProgress')}</StyledText>
+            <StyledText style={{ fontSize: 12, fontWeight: 'bold', color: colors.primary }}>{progressPercentage}%</StyledText>
           </View>
-          <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <View style={{ height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' }}>
             <View
-              className="h-full bg-teal-500 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
+              style={{
+                height: '100%',
+                backgroundColor: colors.primary,
+                borderRadius: 4,
+                width: `${progressPercentage}%`,
+              }}
             />
           </View>
         </View>
@@ -219,54 +225,60 @@ export default function TopicDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={true}>
         {/* Description */}
         {topic.description && (
-          <View className="border-b border-gray-200 bg-white px-5 py-4">
-            <StyledText className="text-sm leading-6 text-gray-700">{topic.description}</StyledText>
+          <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
+            <StyledText style={{ fontSize: 14, lineHeight: 24, color: colors.text }}>{topic.description}</StyledText>
           </View>
         )}
 
         {/* Ayahs Section */}
         {ayahs.length > 0 && (
           <>
-            <View className="mb-3 mt-4 px-5">
+            <View style={{ marginBottom: 12, marginTop: 16, paddingHorizontal: 20 }}>
               <View className="flex-row items-center">
-                <View className="h-6 w-1 rounded-full bg-teal-500" />
-                <StyledText className="ml-2 text-base font-bold text-gray-800">
+                <View style={{ height: 24, width: 4, borderRadius: 2, backgroundColor: colors.primary }} />
+                <StyledText style={{ marginLeft: 8, fontSize: 16, fontWeight: 'bold', color: colors.text }}>
                   {t('quranicVerses')} ({ayahs.length})
                 </StyledText>
               </View>
             </View>
 
             {ayahs.map((ayah, index) => (
-              <View key={`ayah-${index}`} className="mb-3 bg-white px-5 py-4">
+              <View key={`ayah-${index}`} style={{ marginBottom: 12, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
                 {/* Surah Reference */}
-                <View className="mb-2 flex-row items-center">
-                  <View className="rounded-full bg-teal-100 px-3 py-1">
-                    <StyledText className="text-xs font-semibold text-teal-700">
+                <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ borderRadius: 50, backgroundColor: isDark ? 'rgba(20, 184, 166, 0.2)' : 'rgba(20, 184, 166, 0.1)', paddingHorizontal: 12, paddingVertical: 4 }}>
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
                       {t('surah')} {ayah.surah_number}:{ayah.ayah_number}
                     </StyledText>
                   </View>
                   {ayah.surah_name && (
-                    <StyledText className="ml-2 text-xs text-gray-500">{ayah.surah_name}</StyledText>
+                    <StyledText style={{ marginLeft: 8, fontSize: 12, color: colors.textSecondary }}>{ayah.surah_name}</StyledText>
                   )}
                 </View>
 
                 {/* Arabic Text */}
                 <StyledText
-                  className="mb-3 text-right text-2xl leading-loose text-gray-800"
-                  style={{ fontFamily: 'System' }}>
+                  style={{
+                    marginBottom: 12,
+                    textAlign: 'right',
+                    fontSize: 28,
+                    lineHeight: 44,
+                    color: colors.text,
+                    fontFamily: 'System',
+                  }}>
                   {ayah.ayah_arabic}
                 </StyledText>
 
                 {/* Translation */}
                 {ayah.translation && (
-                  <StyledText className="mb-2 text-sm leading-6 text-gray-700">{ayah.translation}</StyledText>
+                  <StyledText style={{ marginBottom: 8, fontSize: 14, lineHeight: 24, color: colors.text }}>{ayah.translation}</StyledText>
                 )}
 
                 {/* Notes */}
                 {ayah.notes && (
-                  <View className="mt-2 rounded-lg bg-amber-50 p-3">
-                    <StyledText className="text-xs font-semibold text-amber-800">📝 {t('note')}</StyledText>
-                    <StyledText className="mt-1 text-xs leading-5 text-amber-700">{ayah.notes}</StyledText>
+                  <View style={{ marginTop: 8, borderRadius: 8, backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)', padding: 12 }}>
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#FBBF24' : '#92400e' }}>📝 {t('note')}</StyledText>
+                    <StyledText style={{ marginTop: 8, fontSize: 12, lineHeight: 20, color: isDark ? '#FCD34D' : '#B45309' }}>{ayah.notes}</StyledText>
                   </View>
                 )}
               </View>
@@ -277,50 +289,56 @@ export default function TopicDetailScreen({ route, navigation }: any) {
         {/* Hadiths Section */}
         {hadiths.length > 0 && (
           <>
-            <View className="mb-3 mt-4 px-5">
+            <View style={{ marginBottom: 12, marginTop: 16, paddingHorizontal: 20 }}>
               <View className="flex-row items-center">
-                <View className="h-6 w-1 rounded-full bg-emerald-500" />
-                <StyledText className="ml-2 text-base font-bold text-gray-800">
+                <View style={{ height: 24, width: 4, borderRadius: 2, backgroundColor: colors.success }} />
+                <StyledText style={{ marginLeft: 8, fontSize: 16, fontWeight: 'bold', color: colors.text }}>
                   {t('hadith')} ({hadiths.length})
                 </StyledText>
               </View>
             </View>
 
             {hadiths.map((hadith, index) => (
-              <View key={`hadith-${index}`} className="mb-3 bg-white px-5 py-4">
+              <View key={`hadith-${index}`} style={{ marginBottom: 12, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16 }}>
                 {/* Hadith Source */}
-                <View className="mb-2 flex-row items-center">
-                  <View className="rounded-full bg-emerald-100 px-3 py-1">
-                    <StyledText className="text-xs font-semibold text-emerald-700">
+                <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ borderRadius: 50, backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 12, paddingVertical: 4 }}>
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.success }}>
                       {hadith.source || t('hadith')}
                     </StyledText>
                   </View>
                   {hadith.reference && (
-                    <StyledText className="ml-2 text-xs text-gray-500">{hadith.reference}</StyledText>
+                    <StyledText style={{ marginLeft: 8, fontSize: 12, color: colors.textSecondary }}>{hadith.reference}</StyledText>
                   )}
                 </View>
 
                 {/* Arabic Text (if available) */}
                 {hadith.hadith_arabic && (
                   <StyledText
-                    className="mb-3 text-right text-lg leading-loose text-gray-800"
-                    style={{ fontFamily: 'System' }}>
+                    style={{
+                      marginBottom: 12,
+                      textAlign: 'right',
+                      fontSize: 18,
+                      lineHeight: 32,
+                      color: colors.text,
+                      fontFamily: 'System',
+                    }}>
                     {hadith.hadith_arabic}
                   </StyledText>
                 )}
 
                 {/* English Translation */}
                 {hadith.hadith_english && (
-                  <StyledText className="mb-2 text-sm leading-6 text-gray-700">
+                  <StyledText style={{ marginBottom: 8, fontSize: 14, lineHeight: 24, color: colors.text }}>
                     {hadith.hadith_english}
                   </StyledText>
                 )}
 
                 {/* Notes */}
                 {hadith.notes && (
-                  <View className="mt-2 rounded-lg bg-blue-50 p-3">
-                    <StyledText className="text-xs font-semibold text-blue-800">💡 {t('explanation')}</StyledText>
-                    <StyledText className="mt-1 text-xs leading-5 text-blue-700">{hadith.notes}</StyledText>
+                  <View style={{ marginTop: 8, borderRadius: 8, backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)', padding: 12 }}>
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#60A5FA' : '#1e40af' }}>💡 {t('explanation')}</StyledText>
+                    <StyledText style={{ marginTop: 8, fontSize: 12, lineHeight: 20, color: isDark ? '#93C5FD' : '#1e3a8a' }}>{hadith.notes}</StyledText>
                   </View>
                 )}
               </View>
@@ -330,15 +348,15 @@ export default function TopicDetailScreen({ route, navigation }: any) {
 
         {/* Empty State */}
         {ayahs.length === 0 && hadiths.length === 0 && !topic.description && (
-          <View className="flex-1 items-center justify-center px-6 py-12">
-            <StyledText className="text-center text-base text-gray-600">
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
+            <StyledText style={{ textAlign: 'center', fontSize: 16, color: colors.textSecondary }}>
               {t('noContentForTopic')}
             </StyledText>
           </View>
         )}
 
         {/* Footer Spacing */}
-        <View className="h-8" />
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   );
