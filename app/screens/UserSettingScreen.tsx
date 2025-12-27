@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, Image, ActivityIndicator, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Updates from 'expo-updates';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 import { apiService } from '../services/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StyledText from '../components/StyledText';
@@ -11,7 +14,10 @@ import StyledText from '../components/StyledText';
 export default function UserSettingScreen({ navigation }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { showAlert } = useCustomAlert();
   const [userName, setUserName] = useState('User');
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Load user profile
   useEffect(() => {
@@ -22,8 +28,125 @@ export default function UserSettingScreen({ navigation }) {
     try {
       const profile = await apiService.getUserProfile();
       setUserName(`${profile.first_name || ''} ${profile.last_name || ''}`);
+      if (profile.profile_picture) {
+        setProfilePicture(profile.profile_picture);
+      }
     } catch (error) {
       // Could not load profile
+    }
+  };
+
+  /**
+   * Handle profile picture selection and upload
+   */
+  const handlePickImage = async () => {
+    try {
+      // Request permissions
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        showAlert(
+          t('permissionRequired') || 'Permission Required',
+          t('cameraPermissionMessage') || 'Please allow access to your photos to upload a profile picture.',
+          'warning'
+        );
+        return;
+      }
+
+      // Show options: Camera or Gallery
+      showAlert(
+        t('selectImage') || 'Select Profile Picture',
+        t('chooseImageSource') || 'Choose image source',
+        'info',
+        [
+          {
+            text: t('camera') || 'Camera',
+            onPress: () => openCamera(),
+          },
+          {
+            text: t('gallery') || 'Gallery',
+            onPress: () => openGallery(),
+          },
+          {
+            text: t('cancel') || 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showAlert(t('error') || 'Error', t('failedToPickImage') || 'Failed to pick image', 'error');
+    }
+  };
+
+  const openCamera = async () => {
+    try {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!cameraPermission.granted) {
+        showAlert(t('permissionRequired') || 'Permission Required', t('cameraPermissionMessage') || 'Camera permission is required', 'warning');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error);
+    }
+  };
+
+  const openGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening gallery:', error);
+    }
+  };
+
+  const uploadProfilePicture = async (imageUri) => {
+    try {
+      setUploadingImage(true);
+
+      // Create form data
+      const formData = new FormData();
+      const filename = imageUri.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('profile_picture', {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      });
+
+      // Upload to backend
+      const response = await apiService.uploadProfilePicture(formData);
+
+      if (response.profile_picture) {
+        setProfilePicture(response.profile_picture);
+        showAlert(t('success') || 'Success', t('profilePictureUpdated') || 'Profile picture updated successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      showAlert(t('error') || 'Error', t('failedToUploadImage') || 'Failed to upload profile picture', 'error');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -68,16 +191,63 @@ export default function UserSettingScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.clear();
-      apiService.clearAuthToken();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    } catch (error) {
-      // Error logging out
-    }
+    showAlert(
+      t('logout') || 'Logout',
+      t('logoutConfirmation') || 'Are you sure you want to logout?',
+      'warning',
+      [
+        {
+          text: t('logout') || 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear all app data
+              await AsyncStorage.clear();
+              // Clear API token
+              apiService.clearAuthToken();
+
+              // Show success message and close app
+              showAlert(
+                t('success') || 'Success',
+                t('loggedOutSuccess') || 'You have been logged out successfully. The app will close now. Please reopen to login.',
+                'success',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Close the app after a short delay
+                      setTimeout(() => {
+                        BackHandler.exitApp();
+                      }, 500);
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Even if there's an error, data is cleared
+              showAlert(
+                t('success') || 'Success',
+                t('loggedOutRestart') || 'You have been logged out. Please restart the app.',
+                'success',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      BackHandler.exitApp();
+                    },
+                  },
+                ]
+              );
+            }
+          },
+        },
+        {
+          text: t('cancel') || 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
   };
 
   return (
@@ -96,10 +266,34 @@ export default function UserSettingScreen({ navigation }) {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View className="items-center bg-white px-6 pb-8">
-          {/* Avatar */}
+          {/* Avatar with Edit Button */}
           <View className="mb-4">
-            <View className="h-24 w-24 items-center justify-center rounded-full bg-gray-600 shadow-lg">
-              <Ionicons name="person" size={48} color="#fff" />
+            <View className="relative">
+              {/* Profile Picture */}
+              {profilePicture ? (
+                <Image
+                  source={{ uri: profilePicture }}
+                  className="h-24 w-24 rounded-full bg-gray-300"
+                  style={{ borderWidth: 3, borderColor: colors.primary }}
+                />
+              ) : (
+                <View className="h-24 w-24 items-center justify-center rounded-full bg-gray-600 shadow-lg">
+                  <Ionicons name="person" size={48} color="#fff" />
+                </View>
+              )}
+
+              {/* Edit Button */}
+              <TouchableOpacity
+                onPress={handlePickImage}
+                disabled={uploadingImage}
+                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-blue-600 shadow-md"
+                style={{ borderWidth: 2, borderColor: '#fff' }}>
+                {uploadingImage ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="camera" size={16} color="#fff" />
+                )}
+              </TouchableOpacity>
             </View>
           </View>
 

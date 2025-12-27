@@ -485,9 +485,19 @@ class QuizService {
           this.attemptId = startResponse.attemptId;
           console.log('✅ Quiz attempt ID:', this.attemptId);
         }
-      } catch (startError) {
-        console.warn('⚠️ Could not start quiz attempt (may need auth):', startError);
-        // Continue anyway with questions, user can still practice
+      } catch (startError: any) {
+        // Check if quiz is already completed (403 error)
+        if (startError.status === 403 || startError.details?.error === 'Quiz already completed') {
+          // Throw specific error to be handled by UI
+          throw new Error(JSON.stringify({
+            type: 'QUIZ_COMPLETED',
+            message: startError.message || 'You have already completed this quiz',
+            previousResult: startError.details?.previous_result
+          }));
+        }
+
+        // For other errors (like authentication), throw to prevent access
+        throw startError;
       }
 
       // Transform backend format to app format
@@ -517,18 +527,35 @@ class QuizService {
       this.currentQuestions = questions;
 
       return questions;
-    } catch (error) {
-      console.warn('⚠️ Backend API not available, using mock data');
-      console.warn('Error details:', error);
+    } catch (error: any) {
+      // Check if it's a structured error (QUIZ_COMPLETED, etc.)
+      if (error.message && error.message.startsWith('{')) {
+        try {
+          const errorData = JSON.parse(error.message);
 
-      // Fallback to mock data if API fails
-      const questions = MOCK_QUIZ_QUESTIONS[quizId] || [];
-      console.log(`📚 Using ${questions.length} mock questions for quiz ${quizId}`);
+          // Re-throw QUIZ_COMPLETED errors directly to UI
+          if (errorData.type === 'QUIZ_COMPLETED') {
+            throw error;
+          }
 
-      // Store questions for potential fallback calculation
-      this.currentQuestions = questions;
+          // Re-throw other structured errors
+          if (errorData.type === 'LOAD_FAILED' || errorData.type === 'NO_ATTEMPT_ID') {
+            throw error;
+          }
+        } catch (parseError) {
+          // If JSON parse failed, it's not a structured error - fall through
+          if (error.message.startsWith('{')) {
+            // Parsing failed but message looks like JSON - re-throw original
+            throw error;
+          }
+        }
+      }
 
-      return questions;
+      // For unstructured errors, wrap in LOAD_FAILED
+      throw new Error(JSON.stringify({
+        type: 'LOAD_FAILED',
+        message: 'Failed to load quiz. Please check your internet connection and try again.'
+      }));
     }
   }
 
@@ -560,10 +587,13 @@ class QuizService {
       console.log(`📊 Attempt ID: ${attemptId}`);
       console.log(`📊 Total answers: ${submission.answers.length}`);
 
-      // Check if we have attemptId
+      // Check if we have attemptId - REQUIRED for submission
       if (!attemptId) {
-        console.warn('⚠️ No attemptId available, calculating results locally');
-        throw new Error('No attemptId available');
+        console.error('❌ No attemptId - quiz was not properly started');
+        throw new Error(JSON.stringify({
+          type: 'NO_ATTEMPT_ID',
+          message: 'Cannot submit quiz. Please start the quiz again.'
+        }));
       }
 
       // Calculate total time taken
@@ -691,24 +721,26 @@ class QuizService {
       console.log(`⏱️ Time taken: ${timeTakenFormatted}`);
 
       return quizResult;
-    } catch (error) {
-      console.warn('⚠️ Backend API not available, calculating results locally');
-      console.warn('Error details:', error);
-
-      // Fallback to local calculation using stored questions
-      // Use currentQuestions (which were loaded earlier) instead of MOCK_QUIZ_QUESTIONS
-      const questions = this.currentQuestions.length > 0
-        ? this.currentQuestions
-        : (MOCK_QUIZ_QUESTIONS[submission.categoryId] || []);
-
-      console.log(`🔢 Calculating results locally for ${questions.length} questions`);
-
-      if (questions.length === 0) {
-        console.error('❌ No questions available for local calculation!');
-        throw new Error('No questions available to calculate results');
+    } catch (error: any) {
+      // Check if it's a structured error (NO_ATTEMPT_ID or QUIZ_COMPLETED)
+      if (error.message && error.message.startsWith('{')) {
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.type === 'NO_ATTEMPT_ID' || errorData.type === 'QUIZ_COMPLETED') {
+            // Re-throw to be handled by UI
+            throw error;
+          }
+        } catch (parseError) {
+          // Not a JSON error, continue
+        }
       }
 
-      return this.calculateResults(questions, submission);
+      // For any other error, don't allow local fallback - quiz must be submitted to backend
+      console.error('🚫 Cannot submit quiz without backend connection');
+      throw new Error(JSON.stringify({
+        type: 'SUBMISSION_FAILED',
+        message: 'Failed to submit quiz. Please check your internet connection and try again.'
+      }));
     }
   }
 

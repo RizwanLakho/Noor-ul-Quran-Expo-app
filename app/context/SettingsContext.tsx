@@ -142,7 +142,25 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateQuranAppearance = (settings: Partial<QuranAppearanceSettings>) => {
-    const newAppearance = { ...quranAppearance, ...settings };
+    let newAppearance = { ...quranAppearance, ...settings };
+
+    // Auto-enable logic: At least one of Arabic text or Translation must be enabled
+    if (settings.hasOwnProperty('arabicTextEnabled') && settings.arabicTextEnabled === false) {
+      if (!newAppearance.translationEnabled) {
+        // Auto-enable translation if user tries to disable both
+        console.log('Auto-enabling translation to keep at least one enabled');
+        newAppearance.translationEnabled = true;
+      }
+    }
+
+    if (settings.hasOwnProperty('translationEnabled') && settings.translationEnabled === false) {
+      if (!newAppearance.arabicTextEnabled) {
+        // Auto-enable Arabic if user tries to disable both
+        console.log('Auto-enabling Arabic to keep at least one enabled');
+        newAppearance.arabicTextEnabled = true;
+      }
+    }
+
     setQuranAppearance(newAppearance);
     saveSettings({
       quranAppearance: newAppearance,

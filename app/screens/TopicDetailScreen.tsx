@@ -198,26 +198,6 @@ export default function TopicDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      {/* Progress Bar */}
-      {progressPercentage > 0 && (
-        <View style={{ backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <View className="flex-row items-center justify-between mb-2">
-            <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{t('readingProgress')}</StyledText>
-            <StyledText style={{ fontSize: 12, fontWeight: 'bold', color: colors.primary }}>{progressPercentage}%</StyledText>
-          </View>
-          <View style={{ height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' }}>
-            <View
-              style={{
-                height: '100%',
-                backgroundColor: colors.primary,
-                borderRadius: 4,
-                width: `${progressPercentage}%`,
-              }}
-            />
-          </View>
-        </View>
-      )}
-
       <ScrollView
         ref={scrollViewRef}
         onScroll={handleScroll}
@@ -264,7 +244,7 @@ export default function TopicDetailScreen({ route, navigation }: any) {
                     fontSize: 28,
                     lineHeight: 44,
                     color: colors.text,
-                    fontFamily: 'System',
+                    fontFamily: quranAppearance.arabicFont,
                   }}>
                   {ayah.ayah_arabic}
                 </StyledText>
@@ -321,7 +301,7 @@ export default function TopicDetailScreen({ route, navigation }: any) {
                       fontSize: 18,
                       lineHeight: 32,
                       color: colors.text,
-                      fontFamily: 'System',
+                      fontFamily: quranAppearance.arabicFont,
                     }}>
                     {hadith.hadith_arabic}
                   </StyledText>
@@ -358,6 +338,26 @@ export default function TopicDetailScreen({ route, navigation }: any) {
         {/* Footer Spacing */}
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* Progress Bar - Bottom */}
+      {progressPercentage > 0 && (
+        <View style={{ backgroundColor: colors.surface, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View className="flex-row items-center justify-between mb-3">
+            <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{t('readingProgress')}</StyledText>
+            <StyledText style={{ fontSize: 12, fontWeight: 'bold', color: colors.primary }}>{progressPercentage}%</StyledText>
+          </View>
+          <View style={{ height: 14, backgroundColor: colors.border, borderRadius: 7, overflow: 'hidden' }}>
+            <View
+              style={{
+                height: '100%',
+                backgroundColor: colors.primary,
+                borderRadius: 7,
+                width: `${progressPercentage}%`,
+              }}
+            />
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(npm install)",
+      "Bash(curl:*)",
+      "Bash(docker ps:*)",
+      "Bash(xargs:*)",
+      "Bash(grep:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm start)",
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker logs:*)",
+      "Bash(node -e:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJ0ZXN0dXNlcjNAdGVzdC5jb20iLCJpYXQiOjE3NjY3MTc2ODQsImV4cCI6MTc2OTMwOTY4NH0.7XI_lyWYzFDFvOHSiXg58mZ1hk_vn-_yEHNNjC19WSw\")",
+      "Bash(npx expo install:*)",
+      "Bash(git push:*)",
+      "Bash(tasklist:*)",
+      "Bash(npx expo start:*)",
+      "Bash(npx tsc:*)",
+      "Bash(PGPASSWORD=myapp_password psql:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(docker-compose:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nImplement word-by-word Quran feature and major UI improvements\n\n## Word-by-Word Quran Feature\n- Add word-by-word Arabic display with English translations\n- Integrate 83,668 words from word-by-word API\n- Translation text scales with Arabic text size \\(0.7x ratio\\)\n- Add word-by-word toggle in settings and reading screen\n\n## Settings & Reading Improvements\n- Update font size range to 9-18px for both Arabic and Translation\n- Add separate translation text size control\n- Add text color selection \\(6 colors: Black, Dark Gray, Teal, Blue, Green, Brown\\)\n- Add Quran font selection \\(Quranic, Uthman\\) to both settings screens\n- Implement auto-toggle logic: at least one of Arabic/Translation must be enabled\n- Add ReadingScreen with all appearance settings\n- Move word-by-word translation scaling to use Arabic text size\n\n## Quiz Enhancements\n- Remove \"Try Again\" button \\(quiz once allowed feature\\)\n- Move action buttons inside ScrollView to prevent content hiding\n- Keep only \"Home\" and \"Review Answers\" buttons\n- Fix button layout and spacing\n\n## Goal System Improvements\n- Add KeyboardAvoidingView to GoalCreationScreen\n- Fix keyboard hiding input fields issue\n- Proper spacing and scroll behavior\n\n## Topic Progress UI\n- Move progress bar from top to bottom\n- Increase progress bar thickness \\(8px → 14px\\)\n- Add proper margins and border styling\n- Progress bar now fixed at bottom with better visibility\n\n## Bug Fixes\n- Fix ReadingScreen state synchronization with context\n- Fix preview section to show word-by-word when enabled\n- Remove ayah number star temporarily then restore per user feedback\n- Add new screens: BookmarksScreen, GoalCreationScreen, GoalDetailScreen, etc.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

@@ -13,6 +13,7 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +21,7 @@ import { apiService } from '../services/ApiService';
 import { useCustomAlert } from '../context/CustomAlertContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useBookmarks } from '../context/BookmarksContext';
 import StyledText from '../components/StyledText';
 import type { Surah, RevelationType, UserData } from './types/quran.types';
 
@@ -27,6 +29,7 @@ export default function QuranScreen({ navigation }: any) {
   const { showAlert } = useCustomAlert();
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { bookmarks } = useBookmarks();
 
   // State Management
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -35,7 +38,7 @@ export default function QuranScreen({ navigation }: any) {
   const [userName, setUserName] = useState('Muhammad Arsalan');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<RevelationType | 'Topics' | 'Juz'>('All');
+  const [selectedFilter, setSelectedFilter] = useState<RevelationType | 'Topics' | 'Juz' | 'Bookmarks'>('All');
   const [topics, setTopics] = useState<any[]>([]);
   const [juzList, setJuzList] = useState<any[]>([]);
 
@@ -408,12 +411,12 @@ export default function QuranScreen({ navigation }: any) {
    */
   const getCategoryColor = (category: string): string => {
     const colors: any = {
-      spirituality: '#10B981',
+      spirituality: '#2EBBC3',
       worship: '#3B82F6',
       character: '#8B5CF6',
       knowledge: '#F59E0B',
       society: '#EC4899',
-      aqeedah: '#10B981',
+      aqeedah: '#2EBBC3',
       ibadah: '#3B82F6',
       akhlaq: '#8B5CF6',
     };
@@ -443,20 +446,24 @@ export default function QuranScreen({ navigation }: any) {
   const renderSurahItem = ({ item }: { item: Surah }) => (
     <TouchableOpacity
       onPress={() => handleSurahPress(item)}
-      className="flex-row items-center justify-between px-5 py-4"
+      className="flex-row items-center px-5 py-4"
       style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       activeOpacity={0.7}>
       {/* Surah Number */}
-      <View className="w-8">
+      <View style={{ width: 32 }}>
         <StyledText className="text-sm font-medium" style={{ color: colors.textSecondary }}>{item.surah_number}</StyledText>
       </View>
 
       {/* Surah Info */}
-      <View className="flex-1 px-4">
-        <StyledText className="mb-1 text-base font-semibold" style={{ color: colors.primary }}>
+      <View style={{ flex: 1, paddingHorizontal: 12 }}>
+        <StyledText
+          className="mb-1 text-base font-semibold"
+          style={{ color: colors.primary }}
+          numberOfLines={1}
+          ellipsizeMode="tail">
           {item.surah_name_english}
         </StyledText>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center flex-wrap">
           <StyledText className="mr-2 text-xs" style={{ color: colors.textSecondary }}>{t(item.revelation_type.toLowerCase())}</StyledText>
           <StyledText className="mr-2 text-xs">{getRevelationIcon(item.revelation_type)}</StyledText>
           <StyledText className="text-xs" style={{ color: colors.textSecondary }}>{item.total_ayahs} {t('ayahs')}</StyledText>
@@ -464,8 +471,11 @@ export default function QuranScreen({ navigation }: any) {
       </View>
 
       {/* Arabic Name */}
-      <View className="items-end">
-        <StyledText className="text-2xl" style={{ fontFamily: 'System', color: colors.text }}>
+      <View style={{ alignItems: 'flex-end', minWidth: 60 }}>
+        <StyledText
+          className="text-2xl"
+          style={{ fontFamily: 'uthman', color: colors.text }}
+          numberOfLines={1}>
           {item.surah_name_arabic}
         </StyledText>
       </View>
@@ -522,34 +532,33 @@ export default function QuranScreen({ navigation }: any) {
   const renderJuzItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() => handleJuzPress(item)}
-      className="mx-5 mb-3 rounded-xl p-4"
-      style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}
+      className="flex-row items-center justify-between px-5 py-4"
+      style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       activeOpacity={0.7}>
-      <View className="flex-row items-center justify-between">
-        {/* Juz Number Circle */}
-        <View className="mr-4 h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: colors.primaryLight + '40' }}>
-          <StyledText className="text-lg font-bold" style={{ color: colors.primary }}>{item.juz_number}</StyledText>
-        </View>
+      {/* Juz Number */}
+      <View className="w-8">
+        <StyledText className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+          {item.juz_number}
+        </StyledText>
+      </View>
 
-        {/* Juz Info */}
-        <View className="flex-1">
-          <StyledText className="mb-1 text-base font-bold" style={{ color: colors.text }}>
-            {item.juz_name_english || `${t('juzFull')} ${item.juz_number}`}
-          </StyledText>
-          {item.juz_name_arabic && (
-            <StyledText className="mb-2 text-sm" style={{ fontFamily: 'System', color: colors.textSecondary }}>
-              {item.juz_name_arabic}
-            </StyledText>
-          )}
+      {/* Juz Info */}
+      <View className="flex-1 px-4">
+        <StyledText className="mb-1 text-base font-semibold" style={{ color: colors.primary }}>
+          {item.juz_name_english || `${t('juzFull')} ${item.juz_number}`}
+        </StyledText>
+        <View className="flex-row items-center">
           <StyledText className="text-xs" style={{ color: colors.textSecondary }}>
             {t('surah')} {item.starting_surah}:{item.starting_ayah} - {item.ending_surah}:{item.ending_ayah}
           </StyledText>
         </View>
+      </View>
 
-        {/* Icon */}
-        <View className="ml-3">
-          <StyledText className="text-3xl">📖</StyledText>
-        </View>
+      {/* Arabic Name */}
+      <View className="items-end">
+        <StyledText className="text-2xl" style={{ fontFamily: 'uthman', color: colors.text }}>
+          {item.juz_name_arabic || ''}
+        </StyledText>
       </View>
     </TouchableOpacity>
   );
@@ -639,7 +648,11 @@ export default function QuranScreen({ navigation }: any) {
       )}
 
       {/* Filter Tabs */}
-      <View className="flex-row items-center px-5 py-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 12 }}>
         <TouchableOpacity
           onPress={() => setSelectedFilter('All')}
           className="mr-6 pb-2"
@@ -686,7 +699,7 @@ export default function QuranScreen({ navigation }: any) {
 
         <TouchableOpacity
           onPress={() => setSelectedFilter('Juz')}
-          className="pb-2"
+          className="mr-6 pb-2"
           style={selectedFilter === 'Juz' ? { borderBottomWidth: 2, borderBottomColor: colors.primary } : {}}>
           <StyledText
             className="text-sm font-semibold"
@@ -694,7 +707,17 @@ export default function QuranScreen({ navigation }: any) {
             📖 {t('juzFilter')}
           </StyledText>
         </TouchableOpacity>
-      </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Bookmarks')}
+          className="pb-2">
+          <StyledText
+            className="text-sm font-semibold"
+            style={{ color: colors.textSecondary }}>
+            🔖 Bookmarks
+          </StyledText>
+        </TouchableOpacity>
+      </ScrollView>
 
       {/* Search Results Info */}
       {searchQuery && (

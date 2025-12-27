@@ -55,7 +55,7 @@ export const CustomAlertProvider: React.FC<{ children: ReactNode }> = ({ childre
   const getIconConfig = () => {
     switch (alertConfig.type) {
       case 'success':
-        return { name: 'checkmark-circle' as const, color: '#10B981', bgColor: '#D1FAE5' };
+        return { name: 'checkmark-circle' as const, color: '#2EBBC3', bgColor: '#D1FAE5' };
       case 'error':
         return { name: 'alert-circle' as const, color: '#EF4444', bgColor: '#FEE2E2' };
       case 'warning':
@@ -120,7 +120,6 @@ export const CustomAlertProvider: React.FC<{ children: ReactNode }> = ({ childre
                   style={[
                     styles.modalButton,
                     getButtonStyle(button.style),
-                    alertConfig.buttons && alertConfig.buttons.length > 1 && styles.multiButton,
                   ]}
                   onPress={() => {
                     if (button.onPress) {
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     width: '100%',
-    gap: 12,
+    flexDirection: 'column',
   },
   modalButton: {
     borderRadius: 12,
@@ -203,9 +202,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     width: '100%',
     alignItems: 'center',
-  },
-  multiButton: {
-    flex: 1,
+    marginBottom: 12,
   },
   defaultButton: {
     backgroundColor: '#2EBBC3',

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Image, StatusBar, ScrollView, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, TouchableOpacity, Image, StatusBar, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useQuiz } from '../context/QuizContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 import apiService from '../services/ApiService';
 import StyledText from '../components/StyledText';
 
@@ -20,12 +21,16 @@ interface QuizCategoryUI {
   iconType: string;
   color: string;
   bgColor: string;
+  hasCompleted?: boolean;
+  bestScore?: number;
+  userAttempts?: number;
 }
 
 export default function Quiz({ navigation }: any) {
   const { startQuiz, isLoading: quizStarting, error } = useQuiz();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { showAlert } = useCustomAlert();
 
   // Default categories with UI styling (fallback)
   const DEFAULT_CATEGORIES: QuizCategoryUI[] = [
@@ -90,16 +95,18 @@ export default function Quiz({ navigation }: any) {
 
       const response = await apiService.getAllQuizzes();
 
+      console.log('📥 API Response:', JSON.stringify(response, null, 2));
 
       // Check if response is valid
       if (!response || !Array.isArray(response)) {
+        console.log('⚠️ Invalid response, using default categories');
         setQuizCategories(DEFAULT_CATEGORIES);
         return;
       }
 
       // Map backend quizzes to UI format
-      // Backend: { id, title, description, difficulty, category, total_questions }
-      // UI: { id, name, description, questionsCount, icon, color, bgColor }
+      // Backend now returns: { id, title, description, difficulty, category, total_questions, time_limit, has_completed, best_score, user_attempts }
+      // UI needs: { id, name, description, questionsCount, timeLimit, difficulty, icon, color, bgColor, hasCompleted, bestScore, userAttempts }
       const mappedQuizzes = response.map((quiz, index) => {
         const defaultCat = DEFAULT_CATEGORIES[index % DEFAULT_CATEGORIES.length];
         return {
@@ -114,11 +121,28 @@ export default function Quiz({ navigation }: any) {
           iconType: defaultCat.iconType,
           color: defaultCat.color,
           bgColor: defaultCat.bgColor,
+          hasCompleted: Boolean(quiz.has_completed), // Convert to boolean explicitly
+          bestScore: quiz.best_score ? Math.round(quiz.best_score) : null,
+          userAttempts: quiz.user_attempts || 0,
         };
       });
 
+      console.log('🎯 Mapped Quizzes:', mappedQuizzes.map(q => ({
+        id: q.id,
+        name: q.name,
+        hasCompleted: q.hasCompleted,
+        bestScore: q.bestScore,
+        userAttempts: q.userAttempts
+      })));
+
+      const availableQuizzes = mappedQuizzes.filter(q => !q.hasCompleted);
+      const completedQuizzes = mappedQuizzes.filter(q => q.hasCompleted);
+
+      console.log(`✅ Available: ${availableQuizzes.length}, Completed: ${completedQuizzes.length}`);
+
       setQuizCategories(mappedQuizzes);
     } catch (err) {
+      console.error('❌ Error fetching quizzes:', err);
       // Keep default categories on error
       setQuizCategories(DEFAULT_CATEGORIES);
     } finally {
@@ -143,7 +167,7 @@ export default function Quiz({ navigation }: any) {
       await startQuiz(category.id, category.name);
       navigation.navigate('QuizQuestion');
     } catch (err) {
-      Alert.alert(t('error'), t('failedToStartQuiz'));
+      showAlert(t('error'), t('failedToStartQuiz'), 'error');
     }
   };
 
@@ -178,7 +202,7 @@ export default function Quiz({ navigation }: any) {
         </View>
       ) : (
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 20, paddingVertical: 24 }}
+          style={{ flex: 1 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -187,58 +211,196 @@ export default function Quiz({ navigation }: any) {
               colors={[colors.primary]}
             />
           }>
-          {/* Quiz Categories Grid */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {quizCategories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={{
-                  marginBottom: 16,
-                  width: '48%',
-                  alignItems: 'center',
-                  borderRadius: 16,
-                  backgroundColor: category.bgColor,
-                  padding: 20,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-                onPress={() => handleCategoryPress(category)}
-                disabled={quizStarting}>
-                <View
-                  style={{
-                    marginBottom: 12,
-                    height: 64,
-                    width: 64,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 32,
-                    backgroundColor: 'white',
-                  }}>
-                  {renderIcon(category.icon, category.iconType, category.color, 32)}
-                </View>
-                <StyledText style={{ textAlign: 'center', fontSize: 14, fontWeight: '600', color: '#333' }}>
-                  {category.name}
+          {/* Available Quizzes Section - 70% of screen */}
+          <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
+            <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>
+              {t('availableQuizzes') || 'Available Quizzes'}
+            </StyledText>
+
+            {quizCategories.filter(q => !q.hasCompleted).length > 0 ? (
+              <View>
+                {quizCategories.filter(q => !q.hasCompleted).map((category) => (
+                  <View
+                    key={category.id}
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      padding: 16,
+                      marginBottom: 12,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}>
+                    {/* Label */}
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>
+                      Quiz
+                    </StyledText>
+
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
+
+                    {/* Main Content Row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                      {/* Icon */}
+                      <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        backgroundColor: colors.primary + '15',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12
+                      }}>
+                        {renderIcon(category.icon, category.iconType, colors.primary, 24)}
+                      </View>
+
+                      {/* Quiz Info */}
+                      <View style={{ flex: 1 }}>
+                        <StyledText style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 }}>
+                          {category.name}
+                        </StyledText>
+                        <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>
+                          {category.questionsCount || 0} questions | {category.timeLimit || 0} min
+                        </StyledText>
+                      </View>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
+
+                    {/* Bottom Row */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <StyledText style={{ fontSize: 11, color: colors.textSecondary }}>
+                        {category.difficulty ? `Difficulty: ${category.difficulty}` : 'New Quiz'}
+                      </StyledText>
+                      <TouchableOpacity onPress={() => handleCategoryPress(category)} disabled={quizStarting}>
+                        <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                          Start Quiz <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                        </StyledText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 24,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 12
+              }}>
+                <MaterialCommunityIcons name="clipboard-check-outline" size={48} color={colors.textSecondary} />
+                <StyledText style={{ fontSize: 14, color: colors.textSecondary, marginTop: 12, textAlign: 'center' }}>
+                  No quizzes available at the moment
                 </StyledText>
-                {category.questionsCount && (
-                  <StyledText style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
-                    {category.questionsCount} {t('questions')}
-                  </StyledText>
-                )}
-                {category.timeLimit && (
-                  <StyledText style={{ marginTop: 2, fontSize: 11, color: '#888' }}>
-                    ⏱️ {category.timeLimit} mins
-                  </StyledText>
-                )}
-                {category.difficulty && (
-                  <StyledText style={{ marginTop: 2, fontSize: 11, color: '#888', textTransform: 'capitalize' }}>
-                    {category.difficulty}
-                  </StyledText>
-                )}
-              </TouchableOpacity>
-            ))}
+              </View>
+            )}
+          </View>
+
+          {/* Divider between sections */}
+          <View style={{ height: 24, backgroundColor: colors.background }} />
+
+          {/* Completed Quizzes Section */}
+          <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <MaterialCommunityIcons name="check-circle" size={24} color="#22c55e" style={{ marginRight: 8 }} />
+              <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>
+                {t('completedQuizzes') || 'Completed Quizzes'}
+              </StyledText>
+            </View>
+
+            {quizCategories.filter(q => q.hasCompleted).length > 0 ? (
+              <View>
+                {quizCategories.filter(q => q.hasCompleted).map((category) => (
+                  <View
+                    key={category.id}
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: '#22c55e' + '40',
+                      padding: 16,
+                      marginBottom: 12,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}>
+                    {/* Label */}
+                    <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>
+                      Quiz
+                    </StyledText>
+
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
+
+                    {/* Main Content Row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                      {/* Icon */}
+                      <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        backgroundColor: '#22c55e' + '15',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12
+                      }}>
+                        <MaterialCommunityIcons name="check-circle" size={24} color="#22c55e" />
+                      </View>
+
+                      {/* Quiz Info */}
+                      <View style={{ flex: 1 }}>
+                        <StyledText style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 }}>
+                          {category.name}
+                        </StyledText>
+                        <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>
+                          {category.questionsCount || 0} questions | {category.timeLimit || 0} min
+                        </StyledText>
+                      </View>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
+
+                    {/* Bottom Row */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <StyledText style={{ fontSize: 11, color: '#22c55e', fontWeight: '600' }}>
+                        Score: {category.bestScore || 0}% ⭐
+                      </StyledText>
+                      <StyledText style={{ fontSize: 11, color: colors.textSecondary }}>
+                        Completed ✓
+                      </StyledText>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 24,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.border
+              }}>
+                <MaterialCommunityIcons name="trophy-outline" size={48} color={colors.textSecondary} />
+                <StyledText style={{ fontSize: 14, color: colors.textSecondary, marginTop: 12, textAlign: 'center' }}>
+                  Complete your first quiz to see it here!
+                </StyledText>
+                <StyledText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>
+                  Each user can take each quiz only once
+                </StyledText>
+              </View>
+            )}
           </View>
         </ScrollView>
       )}

@@ -569,7 +569,7 @@ const ValidationItem = ({ isValid, text, isError = false }) => {
           <Ionicons
             name={isValid ? 'checkmark-circle' : 'ellipse-outline'}
             size={16}
-            color={isValid ? '#10B981' : '#9CA3AF'}
+            color={isValid ? '#2EBBC3' : '#9CA3AF'}
           />
         )}
       </View>

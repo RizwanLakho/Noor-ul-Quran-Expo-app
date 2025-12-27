@@ -35,12 +35,18 @@ export default function SettingsScreen({ navigation }) {
 
   // Text colors for Quran
   const textColors = [
-    { name: t('colorBlack'), value: '#000000' },
-    { name: t('colorDarkGray'), value: '#374151' },
-    { name: t('colorTeal'), value: '#14B8A6' },
-    { name: t('colorBlue'), value: '#3B82F6' },
-    { name: t('colorGreen'), value: '#10B981' },
-    { name: t('colorBrown'), value: '#92400E' },
+    { id: 1, name: t('colorBlack'), value: '#000000' },
+    { id: 2, name: t('colorDarkGray'), value: '#374151' },
+    { id: 3, name: t('colorTeal'), value: '#2EBBC3' },
+    { id: 4, name: t('colorBlue'), value: '#3B82F6' },
+    { id: 5, name: t('colorGreen'), value: '#10B981' },
+    { id: 6, name: t('colorBrown'), value: '#92400E' },
+  ];
+
+  // Quran font options
+  const quranFonts = [
+    { id: 1, name: t('quranicFontName'), value: 'quranic' },
+    { id: 2, name: t('uthmaniFontName'), value: 'uthman' },
   ];
 
   const handleThemeChange = (mode) => {
@@ -249,7 +255,58 @@ export default function SettingsScreen({ navigation }) {
                 paddingHorizontal: 20,
                 paddingBottom: 16,
               }}>
-              {/* Text Size Slider */}
+              {/* Quran Font Selection */}
+              <View style={{ paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <StyledText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 12 }}>
+                  {t('quranFont')}
+                </StyledText>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  {quranFonts.map((font) => (
+                    <TouchableOpacity
+                      key={font.id}
+                      onPress={() => updateQuranAppearance({ arabicFont: font.value })}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 8,
+                        borderWidth: 2,
+                        borderColor: quranAppearance.arabicFont === font.value ? colors.primary : colors.border,
+                        backgroundColor: quranAppearance.arabicFont === font.value ? colors.primaryLight : colors.background,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <View
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          borderWidth: 2,
+                          borderColor: quranAppearance.arabicFont === font.value ? colors.primary : colors.border,
+                          backgroundColor: quranAppearance.arabicFont === font.value ? colors.primary : colors.background,
+                          marginRight: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                        {quranAppearance.arabicFont === font.value && (
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.background }} />
+                        )}
+                      </View>
+                      <StyledText
+                        style={{
+                          fontSize: 14,
+                          fontWeight: '500',
+                          color: quranAppearance.arabicFont === font.value ? colors.primary : colors.text,
+                        }}>
+                        {font.name}
+                      </StyledText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Arabic Text Size Slider */}
               <View style={{ paddingVertical: 16 }}>
                 <View
                   style={{
@@ -257,15 +314,15 @@ export default function SettingsScreen({ navigation }) {
                     justifyContent: 'space-between',
                     marginBottom: 12,
                   }}>
-                  <StyledText style={{ fontSize: 14, color: colors.textSecondary }}>{t('textSize')}</StyledText>
+                  <StyledText style={{ fontSize: 14, color: colors.textSecondary }}>Arabic Text Size</StyledText>
                   <StyledText style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
                     {Math.round(quranAppearance.textSize)}px
                   </StyledText>
                 </View>
                 <Slider
                   style={{ width: '100%', height: 40 }}
-                  minimumValue={16}
-                  maximumValue={32}
+                  minimumValue={9}
+                  maximumValue={18}
                   value={quranAppearance.textSize}
                   onValueChange={(value) => updateQuranAppearance({ textSize: value })}
                   minimumTrackTintColor={colors.primary}
@@ -274,8 +331,38 @@ export default function SettingsScreen({ navigation }) {
                 />
                 <View
                   style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>16px</StyledText>
-                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>32px</StyledText>
+                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>9px</StyledText>
+                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>18px</StyledText>
+                </View>
+              </View>
+
+              {/* Translation Text Size Slider */}
+              <View style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 12,
+                  }}>
+                  <StyledText style={{ fontSize: 14, color: colors.textSecondary }}>Translation Text Size</StyledText>
+                  <StyledText style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
+                    {Math.round(quranAppearance.translationTextSize)}px
+                  </StyledText>
+                </View>
+                <Slider
+                  style={{ width: '100%', height: 40 }}
+                  minimumValue={9}
+                  maximumValue={18}
+                  value={quranAppearance.translationTextSize}
+                  onValueChange={(value) => updateQuranAppearance({ translationTextSize: value })}
+                  minimumTrackTintColor={colors.primary}
+                  maximumTrackTintColor={colors.border}
+                  thumbTintColor={colors.primary}
+                />
+                <View
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>9px</StyledText>
+                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>18px</StyledText>
                 </View>
               </View>
 
@@ -288,7 +375,7 @@ export default function SettingsScreen({ navigation }) {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                   {textColors.map((colorOption) => (
                     <TouchableOpacity
-                      key={colorOption.value}
+                      key={colorOption.id}
                       style={{
                         width: '30%',
                         marginRight: '3.33%',
@@ -326,6 +413,34 @@ export default function SettingsScreen({ navigation }) {
                 </View>
               </View>
 
+              {/* Arabic Text Visibility Toggle */}
+              <View
+                style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <View>
+                    <StyledText style={{ fontSize: 15, color: colors.text, marginBottom: 4 }}>
+                      Show Arabic Text
+                    </StyledText>
+                    <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>
+                      Display Arabic verses
+                    </StyledText>
+                  </View>
+                  <Switch
+                    value={quranAppearance.arabicTextEnabled}
+                    onValueChange={(value) => updateQuranAppearance({ arabicTextEnabled: value })}
+                    trackColor={{ false: colors.border, true: colors.primaryLight }}
+                    thumbColor={
+                      quranAppearance.arabicTextEnabled ? colors.primary : colors.background
+                    }
+                  />
+                </View>
+              </View>
+
               {/* Translation Toggle */}
               <View
                 style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -349,6 +464,34 @@ export default function SettingsScreen({ navigation }) {
                     trackColor={{ false: colors.border, true: colors.primaryLight }}
                     thumbColor={
                       quranAppearance.translationEnabled ? colors.primary : colors.background
+                    }
+                  />
+                </View>
+              </View>
+
+              {/* Word-by-Word Toggle */}
+              <View
+                style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <View>
+                    <StyledText style={{ fontSize: 15, color: colors.text, marginBottom: 4 }}>
+                      Word by Word Arabic
+                    </StyledText>
+                    <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>
+                      Show individual Arabic words
+                    </StyledText>
+                  </View>
+                  <Switch
+                    value={quranAppearance.wordByWordEnabled}
+                    onValueChange={(value) => updateQuranAppearance({ wordByWordEnabled: value })}
+                    trackColor={{ false: colors.border, true: colors.primaryLight }}
+                    thumbColor={
+                      quranAppearance.wordByWordEnabled ? colors.primary : colors.background
                     }
                   />
                 </View>

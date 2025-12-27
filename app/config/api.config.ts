@@ -2,16 +2,22 @@
  * API Configuration
  *
  * 🔴 IMPORTANT: Choose the correct URL based on your device type!
+ *
+ * Local Backend is running in Docker on:
+ * - Backend API: http://localhost:5000
+ * - PostgreSQL: localhost:5432
+ * - Redis: localhost:6379
+ * - Adminer (DB UI): http://localhost:8080
  */
 
-// ✅ For Android Emulator (Default)
-// export const API_BASE_URL = 'http://10.0.2.2:5001/api';
+// ✅ For Android Emulator (Default) - Maps to host machine's localhost
+export const API_BASE_URL = 'http://10.0.2.2:5000/api';
 
-// 📱 For Physical Android/iOS Device (Same WiFi network)
-export const API_BASE_URL = 'http://192.168.1.181:5001/api';
+// 📱 For Physical Android/iOS Device (Same WiFi network) - Use your computer's local IP
+// export const API_BASE_URL = 'http://192.168.105.83:5000/api';
 
 // 🖥️ For iOS Simulator (Mac only)
-// export const API_BASE_URL = 'http://localhost:5001/api';
+// export const API_BASE_URL = 'http://localhost:5000/api';
 
 // API Configuration Object
 export const API_CONFIG = {

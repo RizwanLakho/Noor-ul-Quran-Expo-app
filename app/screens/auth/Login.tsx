@@ -14,6 +14,7 @@ import {
   ImageSourcePropType,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -33,6 +34,8 @@ type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   EmailVerification: { email: string };
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
 };
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
@@ -85,7 +88,28 @@ export default function LoginScreen({
           }
         }, 1500);
       } else {
-        showAlert(t('loginFailed'), response.message || t('invalidCredentials'), 'error');
+        // Check if email verification is required
+        if (response.message && response.message.toLowerCase().includes('verify')) {
+          // Use CustomAlert with theme design
+          showAlert(
+            t('emailNotVerified') || 'Email Not Verified',
+            t('verifyEmailToLogin') ||
+              'Please verify your email to login. You can resend the code from the verification screen.',
+            'warning',
+            [
+              {
+                text: t('verifyNow') || 'Verify Now',
+                onPress: () => navigation.navigate('EmailVerification', { email }),
+              },
+              {
+                text: t('cancel') || 'Cancel',
+                style: 'cancel',
+              },
+            ]
+          );
+        } else {
+          showAlert(t('loginFailed'), response.message || t('invalidCredentials'), 'error');
+        }
       }
     } catch (error) {
       showAlert(t('error'), t('unexpectedError'), 'error');
@@ -96,11 +120,7 @@ export default function LoginScreen({
 
   const handleResendVerification = () => {
     if (!email.trim()) {
-      showAlert(
-        t('emailRequired'),
-        t('enterEmailForVerification'),
-        'warning'
-      );
+      showAlert(t('emailRequired'), t('enterEmailForVerification'), 'warning');
       return;
     }
 
@@ -133,9 +153,9 @@ export default function LoginScreen({
   };
 
   return (
-    <ImageBackground source={bg} resizeMode="cover" className="flex-1 items-center justify-center">
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ImageBackground source={bg} resizeMode="cover" style={styles.background}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}>
@@ -158,14 +178,29 @@ export default function LoginScreen({
             <View style={[styles.card, { backgroundColor: colors.card }]}>
               {/* Header */}
               <View style={styles.header}>
-                <StyledText style={[styles.welcomeText, { color: colors.text }]}>{t('welcomeBackLogin')}</StyledText>
-                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>{t('enterCredentialsToSignIn')}</StyledText>
+                <StyledText style={[styles.welcomeText, { color: colors.text }]}>
+                  {t('welcomeBackLogin')}
+                </StyledText>
+                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>
+                  {t('enterCredentialsToSignIn')}
+                </StyledText>
               </View>
 
               {/* Email Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
-                  <MaterialCommunityIcons name="email-outline" size={24} color={colors.textSecondary} />
+                  <MaterialCommunityIcons
+                    name="email-outline"
+                    size={24}
+                    color={colors.textSecondary}
+                  />
                 </View>
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
@@ -180,7 +215,14 @@ export default function LoginScreen({
               </View>
 
               {/* Password Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
                   <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
@@ -202,13 +244,21 @@ export default function LoginScreen({
               </View>
 
               {/* Forgot Password */}
-              <TouchableOpacity style={styles.forgotPassword} onPress={() => showAlert(t('forgotPassword'), t('featureSoon'), 'info')}>
-                <StyledText style={[styles.forgotPasswordText, { color: colors.text }]}>{t('forgotPassword')}?</StyledText>
+              <TouchableOpacity
+                style={styles.forgotPassword}
+                onPress={() => navigation.navigate('ForgotPassword')}>
+                <StyledText style={[styles.forgotPasswordText, { color: colors.text }]}>
+                  {t('forgotPassword')}?
+                </StyledText>
               </TouchableOpacity>
 
               {/* Sign In Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
+                style={[
+                  styles.signUpButton,
+                  { backgroundColor: colors.primary },
+                  loading && styles.buttonDisabled,
+                ]}
                 onPress={handleSignIn}
                 disabled={loading}>
                 {loading ? (
@@ -222,26 +272,44 @@ export default function LoginScreen({
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               {/* Google Sign In */}
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onGoogleSignIn}>
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  { backgroundColor: colors.card, borderColor: colors.primary },
+                ]}
+                onPress={onGoogleSignIn}>
                 <View style={[styles.googleIcon, { backgroundColor: colors.card }]}>
                   <Image source={gimg} resizeMode="contain" />
                 </View>
-                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithGoogle')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>
+                  {t('continueWithGoogle')}
+                </StyledText>
               </TouchableOpacity>
 
               {/* Facebook Sign In */}
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onFacebookSignIn}>
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  { backgroundColor: colors.card, borderColor: colors.primary },
+                ]}
+                onPress={onFacebookSignIn}>
                 <View style={styles.facebookIcon}>
                   <StyledText style={styles.fText}>f</StyledText>
                 </View>
-                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithFacebook')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>
+                  {t('continueWithFacebook')}
+                </StyledText>
               </TouchableOpacity>
 
               {/* Sign Up Link */}
               <View style={styles.signUpContainer}>
-                <StyledText style={[styles.signUpPrompt, { color: colors.textSecondary }]}>{t('noAccountPrompt')}</StyledText>
+                <StyledText style={[styles.signUpPrompt, { color: colors.textSecondary }]}>
+                  {t('noAccountPrompt')}
+                </StyledText>
                 <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                  <StyledText style={[styles.signUpLink, { color: colors.text }]}>{t('signUp')}</StyledText>
+                  <StyledText style={[styles.signUpLink, { color: colors.text }]}>
+                    {t('signUp')}
+                  </StyledText>
                 </TouchableOpacity>
               </View>
 
@@ -250,16 +318,23 @@ export default function LoginScreen({
                 style={styles.resendVerificationContainer}
                 onPress={handleResendVerification}>
                 <Ionicons name="mail-outline" size={16} color={colors.textSecondary} />
-                <StyledText style={[styles.resendVerificationText, { color: colors.textSecondary }]}>
+                <StyledText
+                  style={[styles.resendVerificationText, { color: colors.textSecondary }]}>
                   {t('didNotReceiveVerificationEmail')}
                 </StyledText>
               </TouchableOpacity>
 
               {/* Skip Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, { backgroundColor: isDark ? colors.surface : '#F0F0F0', marginTop: 10 }]}
+                style={[
+                  styles.signUpButton,
+                  { backgroundColor: isDark ? colors.surface : '#F0F0F0', marginTop: 10 },
+                ]}
                 onPress={onSkip}>
-                <StyledText style={[styles.signUpButtonText, { color: isDark ? colors.text : '#000' }]}>{t('skipForNow')}</StyledText>
+                <StyledText
+                  style={[styles.signUpButtonText, { color: isDark ? colors.text : '#000' }]}>
+                  {t('skipForNow')}
+                </StyledText>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -270,6 +345,9 @@ export default function LoginScreen({
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -286,8 +364,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    width: 220,
-    height: 240,
+    width: 280,
+    height: 220,
   },
   logoPlaceholder: {
     width: 180,
@@ -352,9 +430,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: '#1A1A1A',
-    paddingVertical: 14,
+    paddingVertical: 8,
   },
   eyeButton: {
     padding: 8,
@@ -374,8 +452,9 @@ const styles = StyleSheet.create({
   signUpButton: {
     backgroundColor: '#2EBBC3',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 12,
     alignItems: 'center',
+    marginTop: 8,
     marginBottom: 24,
     shadowColor: '#2EBBC3',
     shadowOffset: {
@@ -405,7 +484,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
     borderWidth: 2,

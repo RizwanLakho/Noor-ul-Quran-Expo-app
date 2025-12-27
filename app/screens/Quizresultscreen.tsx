@@ -1,15 +1,17 @@
 import React from 'react';
-import { View, TouchableOpacity, StatusBar, Alert, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuiz } from '../context/QuizContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 import StyledText from '../components/StyledText';
 
 export default function QuizResultScreen({ navigation, route }) {
   const { resetQuiz } = useQuiz();
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { showAlert } = useCustomAlert();
 
   const { result } = route.params || {};
 
@@ -17,9 +19,10 @@ export default function QuizResultScreen({ navigation, route }) {
   // If no result data, navigate back
   if (!result) {
 
-    Alert.alert(
+    showAlert(
       t('noResults'),
       t('noQuizResults'),
+      'warning',
       [{ text: t('ok'), onPress: () => navigation.goBack() }]
     );
     return null;
@@ -182,10 +185,9 @@ export default function QuizResultScreen({ navigation, route }) {
             </View>
           </View>
         </View>
-      </ScrollView>
 
-      {/* Action Buttons - Fixed at bottom */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, paddingHorizontal: 20, paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+        {/* Action Buttons - Inside ScrollView */}
+        <View style={{ marginTop: 20, marginBottom: 40 }}>
           {/* Review Answers Button - Full width */}
           {result.questions && result.questions.length > 0 && (
             <TouchableOpacity
@@ -198,24 +200,14 @@ export default function QuizResultScreen({ navigation, route }) {
             </TouchableOpacity>
           )}
 
-          {/* Home and Try Again buttons */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <TouchableOpacity
-              style={{ marginRight: 12, flex: 1, alignItems: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 16 }}
-              onPress={handleHomePress}>
-              <StyledText style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>{t('home')}</StyledText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{ flex: 1, alignItems: 'center', borderRadius: 12, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.surface, paddingVertical: 16 }}
-              onPress={() => {
-                resetQuiz();
-                navigation.navigate('Main', { screen: 'Prayer' });
-              }}>
-              <StyledText style={{ fontSize: 16, fontWeight: 'bold', color: colors.primary }}>{t('tryAgain')}</StyledText>
-            </TouchableOpacity>
-          </View>
+          {/* Home Button */}
+          <TouchableOpacity
+            style={{ width: '100%', alignItems: 'center', borderRadius: 12, backgroundColor: colors.primary, paddingVertical: 16 }}
+            onPress={handleHomePress}>
+            <StyledText style={{ fontSize: 16, fontWeight: 'bold', color: '#fff' }}>{t('home')}</StyledText>
+          </TouchableOpacity>
         </View>
+      </ScrollView>
     </View>
   );
 }

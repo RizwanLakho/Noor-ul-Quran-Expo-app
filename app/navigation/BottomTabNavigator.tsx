@@ -39,7 +39,6 @@ export default function BottomTabNavigator() {
       }}>
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
         options={{
           headerShown: true,
           header: () => <Header />,
@@ -50,8 +49,14 @@ export default function BottomTabNavigator() {
               iconName="home"
             />
           ),
-        }}
-      />
+        }}>
+        {(props) => (
+          <HomeScreen
+            {...props}
+            onNotificationPress={() => props.navigation.navigate('Notifications' as never)}
+          />
+        )}
+      </Tab.Screen>
 
       <Tab.Screen
         name="Quran"

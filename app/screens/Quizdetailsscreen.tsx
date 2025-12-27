@@ -23,7 +23,7 @@ export default function QuizDetailsScreen({ navigation, route }) {
       return <Ionicons name="play-skip-forward-circle" size={24} color="#6b7280" />;
     }
     if (userAnswer.isCorrect) {
-      return <Ionicons name="checkmark-circle" size={24} color="#10b981" />;
+      return <Ionicons name="checkmark-circle" size={24} color="#2EBBC3" />;
     }
     return <Ionicons name="close-circle" size={24} color="#ef4444" />;
   };

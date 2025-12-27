@@ -16,8 +16,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../context/ThemeContext';
 import { useCustomAlert } from '../context/CustomAlertContext';
-import { useSearchHistory, SearchHistoryItem as HistoryItemType } from '../context/SearchHistoryContext';
+import {
+  useSearchHistory,
+  SearchHistoryItem as HistoryItemType,
+} from '../context/SearchHistoryContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useBookmarks } from '../context/BookmarksContext';
 import StyledText from '../components/StyledText';
 import { apiService } from '../services/ApiService';
 import SearchResultItem from './components/search/SearchResultItem';
@@ -39,6 +43,7 @@ export default function SearchScreen() {
   const { showAlert } = useCustomAlert();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { t } = useLanguage();
+  const { addBookmark, removeBookmark, isBookmarked } = useBookmarks();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -117,30 +122,20 @@ export default function SearchScreen() {
         rawResults = data.ayahs;
       }
 
-      // Transform the results based on your API response structure
+      // Transform the results based on backend API response structure
+      // Backend returns: { index, sura, aya, text, surah_name_english, translation }
       const results: SearchResult[] = rawResults.map((item: any, index: number) => {
         return {
-          ayahId: item.ayah_id || item.ayahId || item.ayah?.id || item.id || index,
-          text: item.ayah_text || item.text || item.ayah?.text || item.arabic || '',
+          ayahId: item.index || item.ayah_id || item.ayahId || item.id || index,
+          text: item.text || item.ayah_text || item.arabic || '',
           translation:
-            item.translation_text ||
             item.translation ||
-            item.ayah?.translation ||
+            item.translation_text ||
             item.english ||
-            '',
-          surahName:
-            item.surah_name ||
-            item.surahName ||
-            item.surah?.name ||
-            item.surah?.englishName ||
-            'Unknown',
-          surahNumber: item.surah_number || item.surahNumber || item.surah?.number || 0,
-          ayahNumber:
-            item.ayah_number ||
-            item.ayahNumber ||
-            item.ayah?.numberInSurah ||
-            item.verse_number ||
-            0,
+            'Translation not available',
+          surahName: item.surah_name_english || item.surah_name || item.surahName || 'Unknown',
+          surahNumber: item.sura || item.surah_number || item.surahNumber || 0,
+          ayahNumber: item.aya || item.ayah_number || item.ayahNumber || 0,
           highlighted: item.highlighted || '',
         };
       });
@@ -148,16 +143,23 @@ export default function SearchScreen() {
       if (page === 1) {
         setSearchResults(results);
       } else {
-        setSearchResults(prev => [...prev, ...results]);
+        setSearchResults((prev) => [...prev, ...results]);
       }
 
-      // Check if there are more results
-      setHasMore(results.length === 20);
+      // Check if there are more results from pagination metadata
+      const hasMoreResults = data.pagination?.has_more ?? results.length === 20;
+      setHasMore(hasMoreResults);
       setCurrentPage(page);
       setActiveTab('search');
+
+      // Log pagination info
+      if (data.pagination) {
+        console.log(
+          `📄 Page ${data.pagination.current_page}/${data.pagination.total_pages} - Total: ${data.pagination.total_results} results`
+        );
+      }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : t('failedToSearch');
+      const errorMessage = err instanceof Error ? err.message : t('failedToSearch');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -216,55 +218,92 @@ export default function SearchScreen() {
   const handleRemoveFromHistory = () => {
     if (!selectedAyah) return;
 
-    showAlert(
-      t('removeFromHistoryAlertTitle'),
-      t('removeFromHistoryAlertMessage'),
-      'warning',
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('remove'),
-          style: 'destructive',
-          onPress: () => {
-            const historyItem = history.find((h) => h.ayahId === selectedAyah.ayahId);
-            if (historyItem) {
-              removeFromHistory(historyItem.id);
-              setModalVisible(false);
-              showAlert(t('removed'), t('ayahRemovedFromHistory'), 'success');
-            }
-          },
+    showAlert(t('removeFromHistoryAlertTitle'), t('removeFromHistoryAlertMessage'), 'warning', [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('remove'),
+        style: 'destructive',
+        onPress: () => {
+          const historyItem = history.find((h) => h.ayahId === selectedAyah.ayahId);
+          if (historyItem) {
+            removeFromHistory(historyItem.id);
+            setModalVisible(false);
+            showAlert(t('removed'), t('ayahRemovedFromHistory'), 'success');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   /**
    * Handle clear history
    */
   const handleClearHistory = () => {
-    showAlert(
-      t('clearHistoryAlertTitle'),
-      t('clearHistoryAlertMessage'),
-      'warning',
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('clearAll'),
-          style: 'destructive',
-          onPress: () => {
-            clearHistory();
-            showAlert(t('cleared'), t('searchHistoryClearedSuccessfully'), 'success');
-          },
+    showAlert(t('clearHistoryAlertTitle'), t('clearHistoryAlertMessage'), 'warning', [
+      { text: t('cancel'), style: 'cancel' },
+      {
+        text: t('clearAll'),
+        style: 'destructive',
+        onPress: () => {
+          clearHistory();
+          showAlert(t('cleared'), t('searchHistoryClearedSuccessfully'), 'success');
         },
-      ]
-    );
+      },
+    ]);
+  };
+
+  /**
+   * Handle bookmark ayah from search results
+   */
+  const handleBookmarkAyah = async (result: SearchResult) => {
+    try {
+      const bookmarked = isBookmarked(result.surahNumber, result.ayahNumber);
+
+      if (bookmarked) {
+        showAlert('Already Bookmarked', 'This ayah is already in your bookmarks.', 'info');
+      } else {
+        await addBookmark({
+          surahName: result.surahName,
+          surahNumber: result.surahNumber,
+          ayahNumber: result.ayahNumber,
+          arabicText: result.text,
+          translation: result.translation,
+        });
+
+        showAlert('Bookmark Added', 'Ayah has been added to your bookmarks!', 'success');
+      }
+    } catch (error) {
+      console.error('Error bookmarking ayah:', error);
+      showAlert('Error', 'Failed to bookmark ayah. Please try again.', 'error');
+    }
+  };
+
+  /**
+   * Handle share ayah from search results
+   */
+  const handleShareAyah = async (result: SearchResult) => {
+    try {
+      const message = `${result.text}\n\n${result.translation}\n\n- Surah ${result.surahName} (${result.surahNumber}:${result.ayahNumber})\n\nShared from Noor-ul-Quran App`;
+
+      await Share.share({
+        message: message,
+      });
+    } catch (error) {
+      console.error('Error sharing ayah:', error);
+    }
   };
 
   /**
    * Render search result item
    */
   const renderSearchResult = ({ item }: { item: SearchResult }) => (
-    <SearchResultItem item={item} onPress={handleAyahClick} />
+    <SearchResultItem
+      item={item}
+      onPress={handleAyahClick}
+      onBookmark={handleBookmarkAyah}
+      onShare={handleShareAyah}
+      isBookmarked={isBookmarked(item.surahNumber, item.ayahNumber)}
+    />
   );
 
   /**
@@ -291,7 +330,9 @@ export default function SearchScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <StyledText style={[styles.title, { color: colors.text }]}>{t('searchQuranTitle')}</StyledText>
+        <StyledText style={[styles.title, { color: colors.text }]}>
+          {t('searchQuranTitle')}
+        </StyledText>
       </View>
 
       {/* Search Input */}
@@ -347,7 +388,9 @@ export default function SearchScreen() {
                   setSearchQuery(suggestion);
                   performSearch(suggestion);
                 }}>
-                <StyledText style={[styles.suggestionText, { color: colors.text }]}>{suggestion}</StyledText>
+                <StyledText style={[styles.suggestionText, { color: colors.text }]}>
+                  {suggestion}
+                </StyledText>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -372,7 +415,8 @@ export default function SearchScreen() {
               styles.tabText,
               { color: activeTab === 'search' ? colors.primary : colors.textSecondary },
             ]}>
-            {t('resultsTab')} ({searchResults.length})
+            {t('resultsTab')}
+            {/*({searchResults.length})*/}
           </StyledText>
         </TouchableOpacity>
 
@@ -392,7 +436,8 @@ export default function SearchScreen() {
               styles.tabText,
               { color: activeTab === 'history' ? colors.primary : colors.textSecondary },
             ]}>
-            {t('history')} ({history.length})
+            {t('history')}
+            {/*({history.length})*/}
           </StyledText>
         </TouchableOpacity>
       </View>
@@ -448,7 +493,8 @@ export default function SearchScreen() {
                     </View>
                   ) : !hasMore && searchResults.length > 0 ? (
                     <View style={styles.endOfResultsContainer}>
-                      <StyledText style={[styles.endOfResultsText, { color: colors.textSecondary }]}>
+                      <StyledText
+                        style={[styles.endOfResultsText, { color: colors.textSecondary }]}>
                         {t('allResultsLoaded')}
                       </StyledText>
                     </View>
@@ -472,9 +518,13 @@ export default function SearchScreen() {
             ) : (
               <>
                 <View style={styles.historyHeaderContainer}>
-                  <StyledText style={[styles.historyTitle, { color: colors.text }]}>{t('recentSearches')}</StyledText>
+                  <StyledText style={[styles.historyTitle, { color: colors.text }]}>
+                    {t('recentSearches')}
+                  </StyledText>
                   <TouchableOpacity onPress={handleClearHistory}>
-                    <StyledText style={[styles.clearButton, { color: colors.error }]}>{t('clearAll')}</StyledText>
+                    <StyledText style={[styles.clearButton, { color: colors.error }]}>
+                      {t('clearAll')}
+                    </StyledText>
                   </TouchableOpacity>
                 </View>
                 <FlatList
@@ -525,11 +575,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 1,
     borderRadius: 24,
     borderWidth: 1.5,
     gap: 12,
-    shadowColor: '#14B8A6',
+    shadowColor: '#2EBBC3',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -541,12 +591,12 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingVertical: 1,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 80,
-    shadowColor: '#14B8A6',
+    shadowColor: '#2EBBC3',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

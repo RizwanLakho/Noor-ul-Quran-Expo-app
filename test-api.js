@@ -1,7 +1,7 @@
 // Quick API Test Script
 // Run this in your terminal to test your backend: node test-api.js
 
-const API_BASE_URL = 'http://192.168.1.181:5000/api';
+const API_BASE_URL = 'http://72.62.72.1:5000/api';
 
 console.log('Testing API Connection...');
 console.log('API URL:', API_BASE_URL);

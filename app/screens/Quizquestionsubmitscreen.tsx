@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 
 export default function QuizQuestionSubmitScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
+  const { showAlert } = useCustomAlert();
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [timeLeft, setTimeLeft] = useState(7); // 7 seconds timer
   const [currentQuestion, setCurrentQuestion] = useState(3);
@@ -43,7 +45,7 @@ export default function QuizQuestionSubmitScreen({ navigation, route }) {
 
   const handleSubmit = () => {
     if (!selectedAnswer) {
-      Alert.alert('Please select an answer', 'You must select an answer before submitting.');
+      showAlert('Please select an answer', 'You must select an answer before submitting.', 'warning');
       return;
     }
 

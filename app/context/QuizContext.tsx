@@ -7,6 +7,7 @@ import {
   ApiQuizSubmission,
 } from '../types/quiz.types';
 import QuizService from '../services/QuizService';
+import { useCustomAlert } from './CustomAlertContext';
 
 interface QuizContextType {
   currentSession: QuizSession | null;
@@ -26,6 +27,7 @@ interface QuizContextType {
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
 export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { showAlert } = useCustomAlert();
   const [currentSession, setCurrentSession] = useState<QuizSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +59,57 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setCurrentSession(session);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start quiz');
-      console.error('Error starting quiz:', err);
+    } catch (err: any) {
+      // Parse structured error messages
+      let errorData: any = null;
+      if (err instanceof Error && err.message.startsWith('{')) {
+        try {
+          errorData = JSON.parse(err.message);
+        } catch (parseError) {
+          // Not a JSON error
+        }
+      }
+
+      // Handle QUIZ_COMPLETED error with nice popup
+      if (errorData?.type === 'QUIZ_COMPLETED') {
+        const previousResult = errorData.previousResult;
+        const score = previousResult?.score_percentage || 'N/A';
+        const passed = previousResult?.passed;
+
+        showAlert(
+          '✅ Quiz Already Completed',
+          `You have already completed this quiz!\n\n` +
+          `Your Score: ${score}%\n` +
+          `Status: ${passed ? 'Passed ✓' : 'Failed ✗'}\n\n` +
+          `Each quiz can only be taken once.`,
+          'info'
+        );
+
+        setError(null); // Don't show error in UI
+        return; // Exit gracefully
+      }
+
+      // Handle LOAD_FAILED error
+      if (errorData?.type === 'LOAD_FAILED') {
+        showAlert(
+          '🌐 Connection Error',
+          'Failed to load quiz. Please check your internet connection and try again.',
+          'error'
+        );
+
+        setError(null); // Don't show error in UI
+        return; // Exit gracefully
+      }
+
+      // For other errors, show generic message
+      const errorMessage = errorData?.message || (err instanceof Error ? err.message : 'Failed to start quiz');
+      setError(errorMessage);
+
+      showAlert(
+        'Error',
+        errorMessage,
+        'error'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +245,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🎯 QuizContext: submitQuiz called');
 
     if (!currentSession) {
-      console.error('❌ No current session!');
       return null;
     }
 
@@ -230,7 +279,6 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('📥 QuizContext: Result received from QuizService:', result);
 
       if (!result) {
-        console.error('❌ QuizService returned null result');
         throw new Error('No result returned from service');
       }
 
@@ -246,11 +294,51 @@ export const QuizProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('✅ QuizContext: Returning result to caller');
       return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to submit quiz';
-      setError(errorMessage);
-      console.error('❌ QuizContext: Error submitting quiz:', err);
-      console.error('❌ Error details:', errorMessage);
+    } catch (err: any) {
+      // Parse structured error messages
+      let errorData: any = null;
+      if (err instanceof Error && err.message.startsWith('{')) {
+        try {
+          errorData = JSON.parse(err.message);
+        } catch (parseError) {
+          // Not a JSON error
+        }
+      }
+
+      // Handle NO_ATTEMPT_ID error
+      if (errorData?.type === 'NO_ATTEMPT_ID') {
+        showAlert(
+          '⚠️ Cannot Submit Quiz',
+          'Quiz session is invalid. Please restart the quiz.',
+          'warning'
+        );
+
+        setError(null);
+        return null;
+      }
+
+      // Handle SUBMISSION_FAILED error
+      if (errorData?.type === 'SUBMISSION_FAILED') {
+        showAlert(
+          '🌐 Submission Failed',
+          errorData.message || 'Failed to submit quiz. Please check your internet connection.',
+          'error'
+        );
+
+        setError(null);
+        return null;
+      }
+
+      // For other errors, show generic message
+      const errorMessage = errorData?.message || (err instanceof Error ? err.message : 'Failed to submit quiz');
+
+      showAlert(
+        'Error',
+        errorMessage,
+        'error'
+      );
+
+      setError(null); // Don't show error in state
       return null;
     } finally {
       setIsLoading(false);

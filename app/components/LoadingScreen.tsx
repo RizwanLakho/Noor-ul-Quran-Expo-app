@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   decorCircle: {
     position: 'absolute',
     borderRadius: 999,
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#2EBBC3',
   },
   decorCircle1: {
     top: 80,
@@ -242,9 +242,9 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#2EBBC3',
     opacity: 0.2,
-    shadowColor: '#14B8A6',
+    shadowColor: '#2EBBC3',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 30,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#14B8A6',
+    backgroundColor: '#2EBBC3',
   },
   loadingText: {
     fontSize: 18,

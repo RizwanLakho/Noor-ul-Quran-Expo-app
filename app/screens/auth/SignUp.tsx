@@ -113,17 +113,28 @@ export default function SignUpScreen({
 
     setLoading(true);
     try {
-      const response = await api.signUp({ firstName, lastName, email, password });
+      console.log('📧 Attempting signup with email:', email.trim());
+      const response = await api.signUp({ firstName, lastName, email: email.trim(), password });
+
+      console.log('📦 Signup response:', JSON.stringify(response, null, 2));
 
       if (response.success) {
+        // Show backend message to user (tells if email was sent or not)
+        showAlert(
+          t('success'),
+          response.message || 'Registration successful! Please check your email.',
+          'success'
+        );
+
         // Navigate to email verification screen
         setTimeout(() => {
-          navigation.navigate('EmailVerification', { email });
-        }, 500);
+          navigation.navigate('EmailVerification', { email: email.trim() });
+        }, 2000);
       } else {
         showAlert(t('registrationFailed'), response.message || t('unableToCreateAccount'), 'error');
       }
     } catch (error) {
+      console.error('❌ Signup error:', error);
       showAlert(t('error'), t('unexpectedError'), 'error');
     } finally {
       setLoading(false);
@@ -132,8 +143,8 @@ export default function SignUpScreen({
 
   return (
     <ImageBackground source={bg} resizeMode="cover" style={styles.background}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}>
@@ -151,12 +162,23 @@ export default function SignUpScreen({
             <View style={[styles.card, { backgroundColor: colors.card }]}>
               {/* Header */}
               <View style={styles.header}>
-                <StyledText style={[styles.welcomeText, { color: colors.text }]}>{t('createAccount')}</StyledText>
-                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>{t('connectWithQuran')}</StyledText>
+                <StyledText style={[styles.welcomeText, { color: colors.text }]}>
+                  {t('createAccount')}
+                </StyledText>
+                <StyledText style={[styles.subtitle, { color: colors.textSecondary }]}>
+                  {t('connectWithQuran')}
+                </StyledText>
               </View>
 
               {/* First Name Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
                   <FontAwesome6 name="user" size={24} color={colors.textSecondary} />
                 </View>
@@ -172,7 +194,14 @@ export default function SignUpScreen({
               </View>
 
               {/* Last Name Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
                   <FontAwesome6 name="user" size={24} color={colors.textSecondary} />
                 </View>
@@ -188,9 +217,20 @@ export default function SignUpScreen({
               </View>
 
               {/* Email Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
-                  <MaterialCommunityIcons name="email-outline" size={24} color={colors.textSecondary} />
+                  <MaterialCommunityIcons
+                    name="email-outline"
+                    size={24}
+                    color={colors.textSecondary}
+                  />
                 </View>
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
@@ -205,7 +245,14 @@ export default function SignUpScreen({
               </View>
 
               {/* Password Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
                   <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
@@ -228,8 +275,18 @@ export default function SignUpScreen({
 
               {/* Password Requirements */}
               {password.length > 0 && (
-                <View style={[styles.requirementsContainer, { backgroundColor: isDark ? colors.surface : '#F0F9FF', borderColor: isDark ? colors.border : '#BFDBFE' }]}>
-                  <StyledText style={[styles.requirementsTitle, { color: isDark ? colors.info : '#1E40AF' }]}>{t('passwordRequirementsTitle')}</StyledText>
+                <View
+                  style={[
+                    styles.requirementsContainer,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#F0F9FF',
+                      borderColor: isDark ? colors.border : '#BFDBFE',
+                    },
+                  ]}>
+                  <StyledText
+                    style={[styles.requirementsTitle, { color: isDark ? colors.info : '#1E40AF' }]}>
+                    {t('passwordRequirementsTitle')}
+                  </StyledText>
 
                   <View style={styles.requirementRow}>
                     <Ionicons
@@ -237,11 +294,16 @@ export default function SignUpScreen({
                       size={18}
                       color={passwordRequirements.minLength ? colors.success : colors.error}
                     />
-                    <StyledText style={[
-                      styles.requirementText,
-                      { color: passwordRequirements.minLength ? colors.success : colors.textSecondary },
-                      passwordRequirements.minLength && styles.requirementMet
-                    ]}>
+                    <StyledText
+                      style={[
+                        styles.requirementText,
+                        {
+                          color: passwordRequirements.minLength
+                            ? colors.success
+                            : colors.textSecondary,
+                        },
+                        passwordRequirements.minLength && styles.requirementMet,
+                      ]}>
                       {t('passwordRule8Chars')}
                     </StyledText>
                   </View>
@@ -252,11 +314,16 @@ export default function SignUpScreen({
                       size={18}
                       color={passwordRequirements.hasNumber ? colors.success : colors.error}
                     />
-                    <StyledText style={[
-                      styles.requirementText,
-                      { color: passwordRequirements.hasNumber ? colors.success : colors.textSecondary },
-                      passwordRequirements.hasNumber && styles.requirementMet
-                    ]}>
+                    <StyledText
+                      style={[
+                        styles.requirementText,
+                        {
+                          color: passwordRequirements.hasNumber
+                            ? colors.success
+                            : colors.textSecondary,
+                        },
+                        passwordRequirements.hasNumber && styles.requirementMet,
+                      ]}>
                       {t('passwordRule1Number')}
                     </StyledText>
                   </View>
@@ -267,11 +334,16 @@ export default function SignUpScreen({
                       size={18}
                       color={passwordRequirements.hasUpperCase ? colors.success : colors.error}
                     />
-                    <StyledText style={[
-                      styles.requirementText,
-                      { color: passwordRequirements.hasUpperCase ? colors.success : colors.textSecondary },
-                      passwordRequirements.hasUpperCase && styles.requirementMet
-                    ]}>
+                    <StyledText
+                      style={[
+                        styles.requirementText,
+                        {
+                          color: passwordRequirements.hasUpperCase
+                            ? colors.success
+                            : colors.textSecondary,
+                        },
+                        passwordRequirements.hasUpperCase && styles.requirementMet,
+                      ]}>
                       {t('passwordRule1CapitalLetter')}
                     </StyledText>
                   </View>
@@ -282,11 +354,16 @@ export default function SignUpScreen({
                       size={18}
                       color={passwordRequirements.hasSymbol ? colors.success : colors.error}
                     />
-                    <StyledText style={[
-                      styles.requirementText,
-                      { color: passwordRequirements.hasSymbol ? colors.success : colors.textSecondary },
-                      passwordRequirements.hasSymbol && styles.requirementMet
-                    ]}>
+                    <StyledText
+                      style={[
+                        styles.requirementText,
+                        {
+                          color: passwordRequirements.hasSymbol
+                            ? colors.success
+                            : colors.textSecondary,
+                        },
+                        passwordRequirements.hasSymbol && styles.requirementMet,
+                      ]}>
                       {t('passwordRule1Symbol')}
                     </StyledText>
                   </View>
@@ -294,7 +371,14 @@ export default function SignUpScreen({
               )}
 
               {/* Confirm Password Input */}
-              <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.surface : '#F9F9F9', borderColor: colors.border }]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: isDark ? colors.surface : '#F9F9F9',
+                    borderColor: colors.border,
+                  },
+                ]}>
                 <View style={styles.iconContainer}>
                   <Ionicons name="lock-closed-outline" size={24} color={colors.textSecondary} />
                 </View>
@@ -311,13 +395,19 @@ export default function SignUpScreen({
                 <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <StyledText style={styles.eyeIcon}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</StyledText>
+                  <StyledText style={styles.eyeIcon}>
+                    {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                  </StyledText>
                 </TouchableOpacity>
               </View>
 
               {/* Sign Up Button */}
               <TouchableOpacity
-                style={[styles.signUpButton, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
+                style={[
+                  styles.signUpButton,
+                  { backgroundColor: colors.primary },
+                  loading && styles.buttonDisabled,
+                ]}
                 onPress={handleSignUp}
                 disabled={loading}>
                 {loading ? (
@@ -331,26 +421,44 @@ export default function SignUpScreen({
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
               {/* Google Sign In */}
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onGoogleSignIn}>
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  { backgroundColor: colors.card, borderColor: colors.primary },
+                ]}
+                onPress={onGoogleSignIn}>
                 <View style={[styles.googleIcon, { backgroundColor: colors.card }]}>
                   <Image source={gimg} resizeMode="contain" />
                 </View>
-                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithGoogle')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>
+                  {t('continueWithGoogle')}
+                </StyledText>
               </TouchableOpacity>
 
               {/* Facebook Sign In */}
-              <TouchableOpacity style={[styles.socialButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={onFacebookSignIn}>
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  { backgroundColor: colors.card, borderColor: colors.primary },
+                ]}
+                onPress={onFacebookSignIn}>
                 <View style={styles.facebookIcon}>
                   <StyledText style={styles.fText}>f</StyledText>
                 </View>
-                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>{t('continueWithFacebook')}</StyledText>
+                <StyledText style={[styles.socialButtonText, { color: colors.primary }]}>
+                  {t('continueWithFacebook')}
+                </StyledText>
               </TouchableOpacity>
 
               {/* Sign In Link */}
               <View style={styles.signInContainer}>
-                <StyledText style={[styles.signInPrompt, { color: colors.textSecondary }]}>{t('alreadyHaveAccountPrompt')}</StyledText>
+                <StyledText style={[styles.signInPrompt, { color: colors.textSecondary }]}>
+                  {t('alreadyHaveAccountPrompt')}
+                </StyledText>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <StyledText style={[styles.signInLink, { color: colors.text }]}>{t('signIn')}</StyledText>
+                  <StyledText style={[styles.signInLink, { color: colors.text }]}>
+                    {t('signIn')}
+                  </StyledText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -439,7 +547,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#1A1A1A',
-    paddingVertical: 14,
+    paddingVertical: 8,
   },
   eyeButton: {
     padding: 8,
@@ -450,7 +558,7 @@ const styles = StyleSheet.create({
   signUpButton: {
     backgroundColor: '#2EBBC3',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 24,
@@ -482,7 +590,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
     borderWidth: 2,
@@ -573,7 +681,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   requirementMet: {
-    color: '#10B981',
+    color: '#2EBBC3',
     fontWeight: '500',
   },
 });

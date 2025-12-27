@@ -14,13 +14,13 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Alert,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 import apiService, { Surah, SurahWithAyahs } from '../services/ApiService';
 
 type ViewMode = 'juz' | 'surahs' | 'pages' | 'manzils' | 'sajdas';
@@ -39,6 +39,7 @@ interface LastRead {
 
 export default function QuranPerfect({ navigation }: any) {
   const { colors, isDark } = useTheme();
+  const { showAlert } = useCustomAlert();
 
   // State Management
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -126,12 +127,10 @@ export default function QuranPerfect({ navigation }: any) {
 
       // Show error only if we don't have any surahs loaded
       if (surahs.length === 0) {
-        Alert.alert(
+        showAlert(
           'Connection Error',
           'Could not connect to backend. The app will continue with limited functionality.',
-          [
-            { text: 'OK', style: 'cancel' },
-          ]
+          'error'
         );
       }
 
@@ -199,7 +198,7 @@ export default function QuranPerfect({ navigation }: any) {
         surahNameArabic: surah.name,
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to open surah. Please try again.');
+      showAlert('Error', 'Failed to open surah. Please try again.', 'error');
     }
   };
 
@@ -221,7 +220,7 @@ export default function QuranPerfect({ navigation }: any) {
         juzName: juz.name,
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to open Juz. Please try again.');
+      showAlert('Error', 'Failed to open Juz. Please try again.', 'error');
     }
   };
 
@@ -242,7 +241,7 @@ export default function QuranPerfect({ navigation }: any) {
         pageNumber: pageNumber,
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to open page. Please try again.');
+      showAlert('Error', 'Failed to open page. Please try again.', 'error');
     }
   };
 

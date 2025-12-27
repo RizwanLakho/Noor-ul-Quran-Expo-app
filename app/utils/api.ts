@@ -53,9 +53,25 @@ export const api = {
       };
     } catch (error: any) {
       console.error('❌ Login error:', error);
+
+      // Extract error message from backend response
+      let errorMessage = 'Network error. Please check your connection.';
+
+      if (error.details?.error) {
+        // Backend error with details
+        errorMessage = error.details.error;
+
+        // Add attempts remaining if available
+        if (error.details.attemptsRemaining !== undefined) {
+          errorMessage += `\n\nAttempts remaining: ${error.details.attemptsRemaining}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       return {
         success: false,
-        message: error.message || 'Network error. Please check your connection.',
+        message: errorMessage,
       };
     }
   },
@@ -66,7 +82,8 @@ export const api = {
   signUp: async (userData: SignUpRequest): Promise<AuthResponse> => {
     try {
       console.log('📝 Attempting signup...');
-      console.log('👤 User Data:', { ...userData, password: '***' });
+      console.log('📧 Email:', userData.email);
+      console.log('👤 Name:', `${userData.firstName} ${userData.lastName}`);
 
       const data = await apiService.register(
         userData.firstName,
@@ -75,25 +92,45 @@ export const api = {
         userData.password
       );
 
-      console.log('📦 Response Data:', JSON.stringify(data, null, 2));
+      console.log('📦 Backend Response:');
+      console.log('   Success:', data ? 'true' : 'false');
+      console.log('   Message:', data?.message || 'No message');
+      console.log('   Has Token:', data?.token ? 'Yes' : 'No');
+      console.log('   User Email:', data?.user?.email || 'N/A');
 
       if (data.token) {
         // Store the token and user data
         await AsyncStorage.setItem('@auth_token', data.token);
         await AsyncStorage.setItem('@user_data', JSON.stringify(data.user));
-        console.log('✅ Signup successful, token stored');
+        console.log('✅ Token and user data stored');
       }
 
       return {
         success: true,
-        message: 'Registration successful',
+        message: data.message || 'Registration successful',
         data: data,
       };
     } catch (error: any) {
       console.error('❌ SignUp error:', error);
+      console.error('   Error Type:', error.name);
+      console.error('   Error Code:', error.code);
+      console.error('   Error Status:', error.status);
+
+      // Extract error message from backend response
+      let errorMessage = 'Network error. Please check your connection.';
+
+      if (error.details?.error) {
+        // Backend error with details
+        errorMessage = error.details.error;
+        console.error('   Backend Error:', errorMessage);
+      } else if (error.message) {
+        errorMessage = error.message;
+        console.error('   Error Message:', errorMessage);
+      }
+
       return {
         success: false,
-        message: error.message || 'Network error. Please check your connection.',
+        message: errorMessage,
       };
     }
   },
@@ -264,6 +301,48 @@ export const api = {
       return {
         success: false,
         message: error.message || 'Failed to get user data.',
+      };
+    }
+  },
+
+  /**
+   * Request password reset (Forgot Password)
+   */
+  forgotPassword: async (email: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔑 Requesting password reset...');
+      const data = await apiService.forgotPassword(email);
+      console.log('✅ Password reset email sent');
+      return {
+        success: true,
+        message: data.message || 'Password reset code sent to your email.',
+      };
+    } catch (error: any) {
+      console.error('❌ Forgot password error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to send password reset email.',
+      };
+    }
+  },
+
+  /**
+   * Reset password with code
+   */
+  resetPassword: async (token: string, newPassword: string, email?: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Resetting password...');
+      const data = await apiService.resetPassword(token, newPassword, email);
+      console.log('✅ Password reset successful');
+      return {
+        success: true,
+        message: data.message || 'Password reset successful! You can now login.',
+      };
+    } catch (error: any) {
+      console.error('❌ Reset password error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to reset password. Please try again.',
       };
     }
   },

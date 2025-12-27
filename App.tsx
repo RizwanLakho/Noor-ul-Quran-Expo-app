@@ -3,12 +3,13 @@ import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Font from 'expo-font';
+import { useFonts } from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackNavigationOptions,
 } from '@react-navigation/native-stack';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -18,6 +19,8 @@ import OnboardingScreen from './app/screens/Onboarding';
 import LoginScreen from './app/screens/auth/Login';
 import SignUpScreen from './app/screens/auth/SignUp';
 import EmailVerificationScreen from './app/screens/auth/EmailVerification';
+import ForgotPasswordScreen from './app/screens/auth/ForgotPassword';
+import ResetPasswordScreen from './app/screens/auth/ResetPassword';
 import BottomTabNavigator from './app/navigation/BottomTabNavigator';
 import QuranReadingIntegrated from './app/screens/QuranReadingIntegrated';
 // Import all screens
@@ -35,6 +38,8 @@ import { DailyAyahProvider } from './app/context/DailyAyahContext';
 import { SearchHistoryProvider } from './app/context/SearchHistoryContext';
 import { GoalsProvider } from './app/context/GoalsContext';
 import { CustomAlertProvider } from './app/context/CustomAlertContext';
+import { BookmarksProvider } from './app/context/BookmarksContext';
+import { LastReadProvider } from './app/context/LastReadContext';
 import UserSettingScreen from 'app/screens/UserSettingScreen';
 import CustomHeader from 'app/components/Header';
 import EditProfile from 'app/screens/EditProfile';
@@ -43,6 +48,10 @@ import DownloadsScreen from 'app/screens/DownloadsScreen';
 import ReadingScreen from 'app/screens/ReadingScreen';
 import AppearanceScreen from 'app/screens/AppearanceScreen';
 import TranslatorSelectionScreen from 'app/screens/TranslatorSelectionScreen';
+import BookmarksScreen from 'app/screens/BookmarksScreen';
+import GoalCreationScreen from 'app/screens/GoalCreationScreen';
+import GoalDetailScreen from 'app/screens/GoalDetailScreen';
+import NotificationsScreen from 'app/screens/NotificationsScreen';
 import { apiService } from './app/services/ApiService';
 
 type RootStackParamList = {
@@ -50,6 +59,8 @@ type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   EmailVerification: { email: string };
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
   Main: undefined;
 };
 
@@ -58,27 +69,23 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
   // const { t } = useLanguage(); // Removed useLanguage hook call
 
-  // Load fonts
+  // Load fonts using useFonts hook
+  const [fontsLoaded, fontError] = useFonts({
+    quranic: require('./assets/fonts/quranic.ttf'),
+    uthman: require('./assets/fonts/uthman.ttf'),
+    urdu: require('./assets/fonts/urdu.ttf'),
+  });
+
   useEffect(() => {
-    const loadFonts = async () => {
-      try {
-        await Font.loadAsync({
-          quranic: require('./assets/fonts/quranic.ttf'),
-          uthman: require('./assets/fonts/uthman.ttf'),
-          urdu: require('./assets/fonts/urdu.ttf'),
-        });
-        console.log('✅ Fonts loaded successfully');
-        setFontsLoaded(true);
-      } catch (error) {
-        console.error('❌ Error loading fonts:', error);
-        setFontsLoaded(true); // Continue anyway
-      }
-    };
-    loadFonts();
-  }, []);
+    if (fontsLoaded) {
+      console.log('✅ Fonts loaded successfully');
+    }
+    if (fontError) {
+      console.error('❌ Error loading fonts:', fontError);
+    }
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
     const checkAppState = async () => {
@@ -156,16 +163,19 @@ export default function App() {
   }
 
   return (
-    <CustomAlertProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <SettingsProvider>
-            <DailyAyahProvider>
-              <SearchHistoryProvider>
-                <GoalsProvider>
-                  <QuizProvider>
-                    <SafeAreaView className="flex-1">
-                      <StatusBar style="auto" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <CustomAlertProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <SettingsProvider>
+              <DailyAyahProvider>
+                <SearchHistoryProvider>
+                  <GoalsProvider>
+                    <BookmarksProvider>
+                      <LastReadProvider>
+                        <QuizProvider>
+                      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+                        <StatusBar style="auto" />
 
                   {showOnboarding ? (
                     <OnboardingScreen onComplete={handleOnboardingComplete} />
@@ -195,6 +205,18 @@ export default function App() {
                             <Stack.Screen
                               name="EmailVerification"
                               component={EmailVerificationScreen}
+                              options={{ headerShown: false }}
+                            />
+
+                            <Stack.Screen
+                              name="ForgotPassword"
+                              component={ForgotPasswordScreen}
+                              options={{ headerShown: false }}
+                            />
+
+                            <Stack.Screen
+                              name="ResetPassword"
+                              component={ResetPasswordScreen}
                               options={{ headerShown: false }}
                             />
                           </>
@@ -242,13 +264,35 @@ export default function App() {
                               name="TranslatorSelection"
                               component={TranslatorSelectionScreen}
                             />
+                            <Stack.Screen
+                              name="Bookmarks"
+                              component={BookmarksScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="GoalCreation"
+                              component={GoalCreationScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="GoalDetail"
+                              component={GoalDetailScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="Notifications"
+                              component={NotificationsScreen}
+                              options={{ headerShown: false }}
+                            />
                           </>
                         )}
                       </Stack.Navigator>
                     </NavigationContainer>
                   )}
                   </SafeAreaView>
-                  </QuizProvider>
+                      </QuizProvider>
+                    </LastReadProvider>
+                  </BookmarksProvider>
                 </GoalsProvider>
               </SearchHistoryProvider>
             </DailyAyahProvider>
@@ -256,5 +300,6 @@ export default function App() {
         </LanguageProvider>
       </ThemeProvider>
     </CustomAlertProvider>
+    </GestureHandlerRootView>
   );
 }

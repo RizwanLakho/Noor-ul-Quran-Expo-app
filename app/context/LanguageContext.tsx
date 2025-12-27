@@ -31,15 +31,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const loadLanguage = async () => {
     try {
+      // Force LTR layout always (disable RTL)
+      if (I18nManager.isRTL) {
+        I18nManager.allowRTL(false);
+        I18nManager.forceRTL(false);
+        // Restart app to apply LTR layout
+        RNRestart.Restart();
+        return;
+      }
+
       const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
       if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ur')) {
         setLanguageState(savedLanguage as AppLanguage);
-
-        // Set RTL for Urdu
-        if (savedLanguage === 'ur' && !I18nManager.isRTL) {
-          // Note: Changing RTL requires app restart
-          // I18nManager.forceRTL(true);
-        }
       }
     } catch (error) {
       console.error('Error loading language:', error);
@@ -51,15 +54,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
       setLanguageState(lang);
 
-      // Handle RTL for Urdu
-      // Note: Full RTL support requires app restart
-      if (lang === 'ur' && !I18nManager.isRTL) {
-        I18nManager.forceRTL(true);
-        RNRestart.Restart();
-      } else if (lang === 'en' && I18nManager.isRTL) {
-        I18nManager.forceRTL(false);
-        RNRestart.Restart();
-      }
+      // RTL disabled - Keep layout LTR for better UI consistency
+      // Only text changes to Urdu, layout stays the same
+      // if (lang === 'ur' && !I18nManager.isRTL) {
+      //   I18nManager.forceRTL(true);
+      //   RNRestart.Restart();
+      // } else if (lang === 'en' && I18nManager.isRTL) {
+      //   I18nManager.forceRTL(false);
+      //   RNRestart.Restart();
+      // }
     } catch (error) {
       console.error('Error saving language:', error);
     }

@@ -13,7 +13,6 @@ import {
   RefreshControl,
   StatusBar,
   TextInput,
-  Alert,
   ScrollView,
   Modal,
 } from 'react-native';
@@ -22,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/ApiService';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useCustomAlert } from '../context/CustomAlertContext';
 import StyledText from '../components/StyledText';
 import type {
   Surah,
@@ -38,6 +38,7 @@ type ViewMode = 'surahs' | 'pages' | 'sajdas' | 'manzils';
 export default function QuranScreenEnhanced() {
   const { t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const { showAlert } = useCustomAlert();
 
   // State Management
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -139,7 +140,7 @@ export default function QuranScreenEnhanced() {
       const data = await apiService.getSurahs();
       setSurahs(data.surahs);
     } catch (error) {
-      Alert.alert(t('error'), t('failedToLoadSurahs'), [
+      showAlert(t('error'), t('failedToLoadSurahs'), 'error', [
         { text: t('retry'), onPress: () => fetchSurahs() },
         { text: t('cancel'), style: 'cancel' },
       ]);
@@ -169,7 +170,7 @@ export default function QuranScreenEnhanced() {
       const data = await apiService.getSajdas();
       setSajdas(data.sajdas);
     } catch (error) {
-      Alert.alert(t('error'), t('failedToLoadSajdas'));
+      showAlert(t('error'), t('failedToLoadSajdas'), 'error');
     } finally {
       setLoadingMetadata(false);
     }
@@ -184,7 +185,7 @@ export default function QuranScreenEnhanced() {
       const data = await apiService.getPages();
       setPages(data.pages);
     } catch (error) {
-      Alert.alert(t('error'), t('failedToLoadPages'));
+      showAlert(t('error'), t('failedToLoadPages'), 'error');
     } finally {
       setLoadingMetadata(false);
     }
@@ -199,7 +200,7 @@ export default function QuranScreenEnhanced() {
       const data = await apiService.getManzils();
       setManzils(data.manzils);
     } catch (error) {
-      Alert.alert(t('error'), t('failedToLoadManzils'));
+      showAlert(t('error'), t('failedToLoadManzils'), 'error');
     } finally {
       setLoadingMetadata(false);
     }
@@ -262,16 +263,17 @@ export default function QuranScreenEnhanced() {
   const handleSurahPress = async (surah: Surah) => {
     await saveLastRead(surah.surah_name_english.toUpperCase());
 
-    Alert.alert(
+    showAlert(
       surah.surah_name_english,
       `${surah.surah_name_arabic}\n\n${surah.total_ayahs} ${t('ayahs')} • ${surah.revelation_type}`,
+      'info',
       [
-        { text: t('cancel'), style: 'cancel' },
         {
           text: t('readNow'),
           onPress: () => {
           },
         },
+        { text: t('cancel'), style: 'cancel' },
       ]
     );
   };
@@ -280,12 +282,10 @@ export default function QuranScreenEnhanced() {
    * Handle page press
    */
   const handlePagePress = (page: Page) => {
-    Alert.alert(
+    showAlert(
       `${t('page')} ${page.page_number}`,
       `${t('startsAt')}: ${page.surah_name_english} (${page.surah_number}:${page.ayah_number})${page.end_surah_number ? `\n${t('endsAt')}: ${page.end_surah_number}:${page.end_ayah_number}` : ''}`,
-      [
-        { text: t('ok') },
-      ]
+      'info'
     );
   };
 
@@ -293,10 +293,10 @@ export default function QuranScreenEnhanced() {
    * Handle sajda press
    */
   const handleSajdaPress = (sajda: Sajda) => {
-    Alert.alert(
+    showAlert(
       `${t('sajda')} ${sajda.sajda_number} - ${t(sajda.sajda_type)}`,
       `${sajda.surah_name_english} (${sajda.surah_number}:${sajda.ayah_number})\n\n${sajda.ayah_text || ''}`,
-      [{ text: t('ok') }]
+      'info'
     );
   };
 
@@ -304,10 +304,10 @@ export default function QuranScreenEnhanced() {
    * Handle manzil press
    */
   const handleManzilPress = (manzil: Manzil) => {
-    Alert.alert(
+    showAlert(
       `${t('manzil')} ${manzil.manzil_number}`,
       `${manzil.manzil_name_english || `${t('manzil')} ${manzil.manzil_number}`}\n\n${t('startsAt')}: ${manzil.surah_name_english} (${manzil.surah_number}:${manzil.ayah_number})`,
-      [{ text: t('ok') }]
+      'info'
     );
   };
 

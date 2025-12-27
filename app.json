@@ -30,14 +30,21 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.noorulquran"
+      "bundleIdentifier": "com.anonymous.noorulquran",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show accurate prayer times for your area."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/AppIcon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.noorulquran"
+      "package": "com.anonymous.noorulquran",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "extra": {
       "eas": {

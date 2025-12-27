@@ -12,14 +12,13 @@ export default function SettingHeader() {
   return (
     <View
       style={{
-        height: 55,
+        height: 50,
         backgroundColor: colors.background,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
+        paddingHorizontal: 25,
+        paddingTop: 10,
       }}>
       {/* 🔙 Back Button */}
       <TouchableOpacity onPress={() => navigation.goBack()}>

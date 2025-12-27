@@ -4,9 +4,12 @@ export type ThemeMode = 'light' | 'dark' | 'auto';
 export type AppLanguage = 'en' | 'ur';
 
 export interface QuranAppearanceSettings {
-  textSize: number; // 16-32
+  textSize: number; // 9-18 (Arabic text size)
+  translationTextSize: number; // 9-18 (Translation text size)
   textColor: string;
   translationEnabled: boolean;
+  arabicTextEnabled: boolean; // Show/hide Arabic verses
+  wordByWordEnabled: boolean; // Show word-by-word Arabic
   arabicFont: 'quranic' | 'uthman';
   selectedTranslatorName: string; // Name of selected translator
   selectedTranslatorLanguage: string; // Language of selected translator (en, ur, etc)
@@ -25,9 +28,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'auto',
   language: 'en',
   quranAppearance: {
-    textSize: 20,
+    textSize: 14, // Default Arabic text size (9-18 range)
+    translationTextSize: 12, // Default translation text size (9-18 range)
     textColor: '#000000',
     translationEnabled: true,
+    arabicTextEnabled: true, // Arabic verses visible by default
+    wordByWordEnabled: false, // Word-by-word display disabled by default
     arabicFont: 'uthman',
     selectedTranslatorName: '', // Will be set to first available translator
     selectedTranslatorLanguage: '', // Will be set when translator is selected
@@ -59,11 +65,11 @@ export const LIGHT_THEME: ThemeColors = {
   card: '#FFFFFF',
   text: '#111827',
   textSecondary: '#6B7280',
-  primary: '#14B8A6',
-  primaryLight: '#99F6E4',
+  primary: '#2EBBC3',
+  primaryLight: '#7FD9DE',
   border: '#E5E7EB',
   error: '#EF4444',
-  success: '#10B981',
+  success: '#2EBBC3',
   warning: '#F59E0B',
   info: '#3B82F6',
 };
@@ -74,11 +80,11 @@ export const DARK_THEME: ThemeColors = {
   card: '#374151',
   text: '#F9FAFB',
   textSecondary: '#D1D5DB',
-  primary: '#14B8A6',
-  primaryLight: '#2DD4BF',
+  primary: '#2EBBC3',
+  primaryLight: '#5FCBD1',
   border: '#4B5563',
   error: '#EF4444',
-  success: '#10B981',
+  success: '#2EBBC3',
   warning: '#F59E0B',
   info: '#3B82F6',
 };
@@ -120,6 +126,7 @@ export interface Translations {
   currentStreak: string;
   totalQuizzes: string;
   passedQuizzes: string;
+  availableQuizzes: string;
   verseOfTheDay: string;
   noVerseAvailable: string;
   continueReading: string;
@@ -277,6 +284,7 @@ export interface Translations {
   skipForNow: string;
   enterFirstNamePrompt: string;
   enterLastNamePrompt: string;
+  forgetPasswordSubtitle: string;
   weakPassword: string;
   passwordRequirementsBelow: string;
   passwordMismatch: string;
@@ -288,6 +296,17 @@ export interface Translations {
   passwordRule1Number: string;
   passwordRule1CapitalLetter: string;
   passwordRule1Symbol: string;
+  resetPassword: string;
+  resetPasswordSubtitle: string;
+  enterResetCode: string;
+  enterNewPassword: string;
+  confirmNewPassword: string;
+  passwordRequirements: string;
+  passwordRequirement8Chars: string;
+  passwordRequirementUppercase: string;
+  passwordRequirementNumber: string;
+  passwordRequirementSpecial: string;
+  backToLogin: string;
   alreadyHaveAccountPrompt: string;
   invalidCode: string;
   enter6DigitCode: string;
@@ -595,6 +614,23 @@ export interface Translations {
   invalidPassword: string;
   passwordsDoNotMatch: string;
   requiredField: string;
+
+  // Goal Detail Screen
+  goalDetails: string;
+  overallProgress: string;
+  completed: string;
+  active: string;
+  remaining: string;
+  surahs: string;
+  juz: string;
+  topics: string;
+  goalNotFound: string;
+  goBack: string;
+  deleteGoal: string;
+  deleteGoalConfirm: string;
+  complete: string;
+  expired: string;
+  lastReadOn: string;
 }
 
 export const ENGLISH_TRANSLATIONS: Translations = {
@@ -633,6 +669,7 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   currentStreak: 'Current Streak',
   totalQuizzes: 'Total Quizzes',
   passedQuizzes: 'Passed Quizzes',
+  availableQuizzes: 'Available Quizzes',
 
   // New Home Screen keys
   verseOfTheDay: 'Verse of the Day',
@@ -678,6 +715,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   dateYears: 'years',
   dateNever: 'Never updated',
   dateUnknown: 'Unknown',
+  forgetPasswordSubtitle:
+    'Enter your email address and we will send you a code to reset your password',
   passwordRequirementsError: 'Password must meet all requirements',
   enterCurrentPasswordPrompt: 'Please enter your current password',
   failedToUpdatePassword: 'Failed to update password',
@@ -689,7 +728,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   accountDeactivatedMessage: 'Your account has been deactivated',
   failedToDeactivateAccount: 'Failed to deactivate account. Check your password.',
   login: 'Login',
-  passwordSecurityMessage: 'For your security, we recommend using a strong password that you don’t use elsewhere.',
+  passwordSecurityMessage:
+    'For your security, we recommend using a strong password that you don’t use elsewhere.',
   passwordRule8Chars: 'Must have at least 8 characters.',
   passwordRuleAlphaNumeric: 'Use a mix of letters and numbers.',
   deactivate: 'Deactivate',
@@ -697,7 +737,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   deleteAccountMessage: 'This action cannot be undone. All your data will be permanently deleted.',
   enterPasswordToConfirm: 'Enter your password to confirm',
   deactivateAccountTitle: 'Deactivate Account?',
-  deactivateAccountMessage: 'Your account will be temporarily disabled. You can reactivate it anytime by logging in.',
+  deactivateAccountMessage:
+    'Your account will be temporarily disabled. You can reactivate it anytime by logging in.',
   languageChanged: 'Language changed',
   appWillUseFont: 'App will use {font} for UI.',
   urduFont: 'Urdu font',
@@ -746,7 +787,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   submit: 'Submit',
   next: 'Next',
   readyToSubmit: 'Ready to Submit?',
-  allQuestionsAnswered: "You've answered all questions! Would you like to review your answers or submit the quiz now?",
+  allQuestionsAnswered:
+    "You've answered all questions! Would you like to review your answers or submit the quiz now?",
   totalQuestions: 'Total Questions:',
   answered: 'Answered:',
   submitQuiz: 'Submit Quiz',
@@ -803,6 +845,17 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   passwordRule1Number: 'At least 1 number',
   passwordRule1CapitalLetter: 'At least 1 capital letter',
   passwordRule1Symbol: 'At least 1 symbol (!@#$%^&*)',
+  resetPassword: 'Reset Password',
+  resetPasswordSubtitle: 'Enter the 6-digit code sent to your email and your new password',
+  enterResetCode: 'Enter 6-digit code',
+  enterNewPassword: 'Enter new password',
+  confirmNewPassword: 'Confirm new password',
+  passwordRequirements: 'Password must contain:',
+  passwordRequirement8Chars: 'At least 8 characters',
+  passwordRequirementUppercase: 'At least one uppercase letter',
+  passwordRequirementNumber: 'At least one number',
+  passwordRequirementSpecial: 'At least one special character (!@#$%^&*...)',
+  backToLogin: 'Back to Login',
   alreadyHaveAccountPrompt: 'Already have an account? ',
   invalidCode: 'Invalid Code',
   enter6DigitCode: 'Please enter a 6-digit verification code',
@@ -821,7 +874,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   checkSpamFolder: "Check spam folder if you don't see it",
   resendCode: 'Resend Code',
   backToLogin: 'Back to Login',
-  postVerificationInfo: "After verification, you'll receive a welcome email and can log in with full access!",
+  postVerificationInfo:
+    "After verification, you'll receive a welcome email and can log in with full access!",
   surahYasin: 'YA SIN',
   surahArRahman: 'AR-RAHMAN',
   juz30: 'Juz 30',
@@ -847,7 +901,7 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   found: 'found',
   noResultsFound: 'No results found',
   noSurahsAvailable: 'No surahs available',
-  noSurahsMatchingSearch: "We couldn't find any surahs matching \"{searchQuery}\"",
+  noSurahsMatchingSearch: 'We couldn\'t find any surahs matching "{searchQuery}"',
   checkConnectionAndRetry: 'Please check your connection and try again',
   clearSearch: 'Clear Search',
   loadingQuran: 'Loading Quran...',
@@ -878,10 +932,13 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   fatihaAyah4: 'Sovereign of the Day of Recompense.',
   fatihaAyah5: 'It is You we worship and You we ask for help.',
   fatihaAyah6: 'Guide us to the straight path -',
-  fatihaAyah7: 'The path of those upon whom You have bestowed favor, not of those who have earned [Your] anger or of those who are astray.',
+  fatihaAyah7:
+    'The path of those upon whom You have bestowed favor, not of those who have earned [Your] anger or of those who are astray.',
   comingSoon: 'Coming Soon',
-  pageNavigationComingSoon: 'Page {pageNumber} navigation will be available when backend supports page-specific endpoints.',
-  failedToLoadQuranData: 'Failed to load Quran data. Please check your connection and ensure the backend is running.',
+  pageNavigationComingSoon:
+    'Page {pageNumber} navigation will be available when backend supports page-specific endpoints.',
+  failedToLoadQuranData:
+    'Failed to load Quran data. Please check your connection and ensure the backend is running.',
   alQuran: 'Al-Quran',
   translationNotAvailable: 'Translation not available',
   translationLabel: 'Translation',
@@ -922,13 +979,17 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   failedToLoadManzilsData: 'Failed to load manzils data',
   assalamuAlaikum: 'Assalamu Alaikum, {userName}',
   onboardingHolyQuranTitle: 'Holy Quran',
-  onboardingHolyQuranDesc: 'Here should be some lines about this feature of this app how a user can get facilitate from this feature of the app not more than 3 line',
+  onboardingHolyQuranDesc:
+    'Here should be some lines about this feature of this app how a user can get facilitate from this feature of the app not more than 3 line',
   onboardingMemorizeQuranTitle: 'Memorize Quran',
-  onboardingMemorizeQuranDesc: 'Here should be some lines about this feature of thisapp how a user can get facilitate from this feature of the app not more than 3 lines',
+  onboardingMemorizeQuranDesc:
+    'Here should be some lines about this feature of thisapp how a user can get facilitate from this feature of the app not more than 3 lines',
   onboardingQuranQuizzesTitle: 'Quran Quizzes',
-  onboardingQuranQuizzesDesc: 'Here should be some lines about this feature of this app how a user can get facilitate from this feature of the app not more than 3 lines',
+  onboardingQuranQuizzesDesc:
+    'Here should be some lines about this feature of this app how a user can get facilitate from this feature of the app not more than 3 lines',
   onboardingStreaksChallengesTitle: 'Streaks & Challenges',
-  onboardingStreaksChallengesDesc: 'Stay motivated and inspired with badges, reminders, streaks & rewards.',
+  onboardingStreaksChallengesDesc:
+    'Stay motivated and inspired with badges, reminders, streaks & rewards.',
   appName: 'NOOR UL QURAN',
   searchQuranTitle: 'Search Quran',
   searchPlaceholder: 'Search ayahs, surahs, keywords...',
@@ -944,7 +1005,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   recentSearches: 'Recent Searches',
   clearAll: 'Clear All',
   removeFromHistoryAlertTitle: 'Remove from History',
-  removeFromHistoryAlertMessage: 'Are you sure you want to remove this ayah from your search history?',
+  removeFromHistoryAlertMessage:
+    'Are you sure you want to remove this ayah from your search history?',
   remove: 'Remove',
   removed: 'Removed',
   ayahRemovedFromHistory: 'Ayah removed from history',
@@ -971,7 +1033,8 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   surahAyah: 'Surah {surahNumber}, Ayah {ayahNumber}',
   ayahNotFound: 'Ayah not found',
   editScreenInfoTitle: 'Open up the code for this screen:',
-  editScreenInfoDescription: 'Change any of the text, save the file, and your app will automatically update.',
+  editScreenInfoDescription:
+    'Change any of the text, save the file, and your app will automatically update.',
   loadingFontsEllipsis: 'Loading fonts...',
   preparingQuranExperienceEllipsis: 'Preparing your Quran experience...',
   checkingAppStateEllipsis: 'Checking app state...',
@@ -1030,13 +1093,16 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   passwordUpdatedSuccess: 'Password updated successfully!',
   mustHave8Characters: 'Must have 8 characters.',
   useAlphabetsAndNumbers: 'Use alphabets A-Z and numbers 0-9 and (special characters recommended).',
-  mustHaveUpperLower: 'Must have one Uppercase one lower case letter and one number and one special character.',
-  useSpecialCharacters: 'Use only these special characters (! @ # $ % ^ & * \' & + \' ).',
+  mustHaveUpperLower:
+    'Must have one Uppercase one lower case letter and one number and one special character.',
+  useSpecialCharacters: "Use only these special characters (! @ # $ % ^ & * ' & + ' ).",
   accountSettings: 'Account Settings',
   deleteYourAccount: 'Delete your Account',
   deactivateYourAccount: 'Deactivate your Account',
-  deleteAccountConfirm: 'Are you sure you want to delete your account? This action cannot be undone.',
-  deactivateAccountConfirm: 'Are you sure you want to deactivate your account? You can reactivate it by logging in again.',
+  deleteAccountConfirm:
+    'Are you sure you want to delete your account? This action cannot be undone.',
+  deactivateAccountConfirm:
+    'Are you sure you want to deactivate your account? You can reactivate it by logging in again.',
 
   // Appearance
   theme: 'Theme',
@@ -1110,6 +1176,23 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   invalidPassword: 'Invalid password',
   passwordsDoNotMatch: 'Passwords do not match',
   requiredField: 'This field is required',
+
+  // Goal Detail Screen
+  goalDetails: 'Goal Details',
+  overallProgress: 'Overall Progress',
+  completed: 'Completed',
+  active: 'Active',
+  remaining: 'Remaining',
+  surahs: 'Surahs',
+  juz: 'Juz',
+  topics: 'Topics',
+  goalNotFound: 'Goal not found',
+  goBack: 'Go Back',
+  deleteGoal: 'Delete Goal',
+  deleteGoalConfirm: 'Are you sure you want to delete',
+  complete: 'Complete',
+  expired: 'Expired',
+  lastReadOn: 'Last read',
 };
 
 export const URDU_TRANSLATIONS: Translations = {
@@ -1148,6 +1231,7 @@ export const URDU_TRANSLATIONS: Translations = {
   currentStreak: 'موجودہ سلسلہ',
   totalQuizzes: 'کل کوئزز',
   passedQuizzes: 'کامیاب کوئزز',
+  availableQuizzes: 'دستیاب کوئزز',
 
   // New Home Screen keys
   verseOfTheDay: 'آج کی آیت',
@@ -1204,15 +1288,18 @@ export const URDU_TRANSLATIONS: Translations = {
   accountDeactivatedMessage: 'آپ کا اکاؤنٹ غیر فعال کر دیا گیا ہے',
   failedToDeactivateAccount: 'اکاؤنٹ غیر فعال کرنے میں ناکام۔ اپنا پاس ورڈ چیک کریں۔',
   login: 'لاگ ان',
-  passwordSecurityMessage: 'آپ کی سیکیورٹی کے لیے، ہم ایک مضبوط پاس ورڈ استعمال کرنے کی تجویز کرتے ہیں جو آپ کہیں اور استعمال نہیں کرتے ہیں۔',
+  passwordSecurityMessage:
+    'آپ کی سیکیورٹی کے لیے، ہم ایک مضبوط پاس ورڈ استعمال کرنے کی تجویز کرتے ہیں جو آپ کہیں اور استعمال نہیں کرتے ہیں۔',
   passwordRule8Chars: 'کم از کم 8 حروف ہونے چاہئیں۔',
   passwordRuleAlphaNumeric: 'حروف اور نمبروں کا مرکب استعمال کریں۔',
   deactivate: 'غیر فعال کریں',
   deleteAccountTitle: 'اکاؤنٹ حذف کریں؟',
-  deleteAccountMessage: 'یہ عمل واپس نہیں کیا جا سکتا۔ آپ کا تمام ڈیٹا مستقل طور پر حذف کر دیا جائے گا۔',
+  deleteAccountMessage:
+    'یہ عمل واپس نہیں کیا جا سکتا۔ آپ کا تمام ڈیٹا مستقل طور پر حذف کر دیا جائے گا۔',
   enterPasswordToConfirm: 'تصدیق کے لیے اپنا پاس ورڈ درج کریں',
   deactivateAccountTitle: 'اکاؤنٹ غیر فعال کریں؟',
-  deactivateAccountMessage: 'آپ کا اکاؤنٹ عارضی طور پر غیر فعال کر دیا جائے گا۔ آپ لاگ ان کر کے کسی بھی وقت اسے دوبارہ فعال کر سکتے ہیں۔',
+  deactivateAccountMessage:
+    'آپ کا اکاؤنٹ عارضی طور پر غیر فعال کر دیا جائے گا۔ آپ لاگ ان کر کے کسی بھی وقت اسے دوبارہ فعال کر سکتے ہیں۔',
   languageChanged: 'زبان تبدیل ہوگئی',
   appWillUseFont: 'ایپ UI کے لیے {font} فونٹ استعمال کرے گی',
   urduFont: 'اردو فونٹ',
@@ -1261,7 +1348,8 @@ export const URDU_TRANSLATIONS: Translations = {
   submit: 'جمع کرائیں',
   next: 'اگلا',
   readyToSubmit: 'جمع کرانے کے لیے تیار ہیں؟',
-  allQuestionsAnswered: 'آپ نے تمام سوالات کے جوابات دے دیے ہیں! کیا آپ اپنے جوابات کا جائزہ لینا چاہیں گے یا ابھی کوئز جمع کرائیں گے؟',
+  allQuestionsAnswered:
+    'آپ نے تمام سوالات کے جوابات دے دیے ہیں! کیا آپ اپنے جوابات کا جائزہ لینا چاہیں گے یا ابھی کوئز جمع کرائیں گے؟',
   totalQuestions: 'کل سوالات:',
   answered: 'جواب دیا:',
   submitQuiz: 'کوئز جمع کرائیں',
@@ -1308,7 +1396,8 @@ export const URDU_TRANSLATIONS: Translations = {
   enterFirstNamePrompt: 'براہ کرم اپنا پہلا نام درج کریں',
   enterLastNamePrompt: 'براہ کرم اپنا آخری نام درج کریں',
   weakPassword: 'کمزور پاس ورڈ',
-  passwordRequirementsBelow: 'براہ کرم یقینی بنائیں کہ آپ کا پاس ورڈ نیچے دی گئی تمام ضروریات کو پورا کرتا ہے',
+  passwordRequirementsBelow:
+    'براہ کرم یقینی بنائیں کہ آپ کا پاس ورڈ نیچے دی گئی تمام ضروریات کو پورا کرتا ہے',
   passwordMismatch: 'پاس ورڈ مماثل نہیں',
   registrationFailed: 'رجسٹریشن ناکام',
   unableToCreateAccount: 'اکاؤنٹ بنانے سے قاصر',
@@ -1318,6 +1407,17 @@ export const URDU_TRANSLATIONS: Translations = {
   passwordRule1Number: 'کم از کم 1 نمبر',
   passwordRule1CapitalLetter: 'کم از کم 1 بڑا حرف',
   passwordRule1Symbol: 'کم از کم 1 علامت (!@#$%^&*)',
+  resetPassword: 'پاس ورڈ ری سیٹ کریں',
+  resetPasswordSubtitle: 'اپنے ای میل پر بھیجا گیا 6 ہندسوں کا کوڈ اور نیا پاس ورڈ درج کریں',
+  enterResetCode: '6 ہندسوں کا کوڈ درج کریں',
+  enterNewPassword: 'نیا پاس ورڈ درج کریں',
+  confirmNewPassword: 'نیا پاس ورڈ تصدیق کریں',
+  passwordRequirements: 'پاس ورڈ میں ہونا ضروری ہے:',
+  passwordRequirement8Chars: 'کم از کم 8 حروف',
+  passwordRequirementUppercase: 'کم از کم ایک بڑا حرف',
+  passwordRequirementNumber: 'کم از کم ایک نمبر',
+  passwordRequirementSpecial: 'کم از کم ایک خاص علامت (!@#$%^&*...)',
+  backToLogin: 'لاگ ان پر واپس جائیں',
   alreadyHaveAccountPrompt: 'پہلے سے ہی اکاؤنٹ ہے؟',
   invalidCode: 'غلط کوڈ',
   enter6DigitCode: 'براہ کرم 6 ہندسوں کا تصدیقی کوڈ درج کریں',
@@ -1336,7 +1436,8 @@ export const URDU_TRANSLATIONS: Translations = {
   checkSpamFolder: 'اگر آپ کو یہ نظر نہیں آتا تو سپیم فولڈر چیک کریں',
   resendCode: 'کوڈ دوبارہ بھیجیں',
   backToLogin: 'لاگ ان پر واپس جائیں',
-  postVerificationInfo: 'تصدیق کے بعد، آپ کو ایک خوش آمدید ای میل موصول ہوگی اور آپ مکمل رسائی کے ساتھ لاگ ان کر سکیں گے!',
+  postVerificationInfo:
+    'تصدیق کے بعد، آپ کو ایک خوش آمدید ای میل موصول ہوگی اور آپ مکمل رسائی کے ساتھ لاگ ان کر سکیں گے!',
   surahYasin: 'یٰس',
   surahArRahman: 'الرحمن',
   juz30: 'پارہ 30',
@@ -1345,7 +1446,8 @@ export const URDU_TRANSLATIONS: Translations = {
   contentLoading: 'مواد لوڈ ہو رہا ہے...',
   ayahs: 'آیات',
   juzFull: 'پارہ',
-  failedToLoadSurahs: 'سورتیں لوڈ کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں',
+  failedToLoadSurahs:
+    'سورتیں لوڈ کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں',
   failedToOpenSurah: 'سورت کھولنے میں ناکام۔ براہ کرم دوبارہ کوشش کریں',
   searchTopicsPlaceholder: 'موضوعات تلاش کریں...',
   searchJuzPlaceholder: 'پارہ نمبر یا نام سے تلاش کریں...',
@@ -1393,10 +1495,13 @@ export const URDU_TRANSLATIONS: Translations = {
   fatihaAyah4: 'روز جزا کا مالک ہے',
   fatihaAyah5: 'ہم تیری ہی عبادت کرتے ہیں اور تجھ ہی سے مدد مانگتے ہیں',
   fatihaAyah6: 'ہمیں سیدھا راستہ دکھا',
-  fatihaAyah7: 'ان لوگوں کا راستہ جن پر تو نے انعام کیا، نہ کہ ان کا جن پر غضب ہوا اور نہ گمراہوں کا',
+  fatihaAyah7:
+    'ان لوگوں کا راستہ جن پر تو نے انعام کیا، نہ کہ ان کا جن پر غضب ہوا اور نہ گمراہوں کا',
   comingSoon: 'جلد آرہا ہے',
-  pageNavigationComingSoon: 'صفحہ {pageNumber} کی نیویگیشن جلد دستیاب ہوگی جب بیک اینڈ صفحہ مخصوص اینڈ پوائنٹس کو سپورٹ کرے گا',
-  failedToLoadQuranData: 'قرآن کا ڈیٹا لوڈ کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں اور یقینی بنائیں کہ بیک اینڈ چل رہا ہے',
+  pageNavigationComingSoon:
+    'صفحہ {pageNumber} کی نیویگیشن جلد دستیاب ہوگی جب بیک اینڈ صفحہ مخصوص اینڈ پوائنٹس کو سپورٹ کرے گا',
+  failedToLoadQuranData:
+    'قرآن کا ڈیٹا لوڈ کرنے میں ناکام۔ براہ کرم اپنا کنکشن چیک کریں اور یقینی بنائیں کہ بیک اینڈ چل رہا ہے',
   alQuran: 'القرآن',
   translationNotAvailable: 'ترجمہ دستیاب نہیں',
   translationLabel: 'ترجمہ',
@@ -1437,13 +1542,17 @@ export const URDU_TRANSLATIONS: Translations = {
   failedToLoadManzilsData: 'منازل کا ڈیٹا لوڈ کرنے میں ناکام',
   assalamuAlaikum: 'السلام علیکم، {userName}',
   onboardingHolyQuranTitle: 'قرآن پاک',
-  onboardingHolyQuranDesc: 'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
+  onboardingHolyQuranDesc:
+    'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
   onboardingMemorizeQuranTitle: 'قرآن حفظ کریں',
-  onboardingMemorizeQuranDesc: 'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
+  onboardingMemorizeQuranDesc:
+    'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
   onboardingQuranQuizzesTitle: 'قرآن کوئز',
-  onboardingQuranQuizzesDesc: 'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
+  onboardingQuranQuizzesDesc:
+    'یہاں اس ایپ کی اس خصوصیت کے بارے میں کچھ سطریں ہونی چاہئیں کہ صارف اس ایپ کی اس خصوصیت سے کیسے فائدہ اٹھا سکتا ہے، 3 لائنوں سے زیادہ نہیں',
   onboardingStreaksChallengesTitle: 'اسٹریکس اور چیلنجز',
-  onboardingStreaksChallengesDesc: 'بیجز، یاد دہانیوں، اسٹریکس اور انعامات کے ساتھ حوصلہ افزائی اور متاثر رہیں۔',
+  onboardingStreaksChallengesDesc:
+    'بیجز، یاد دہانیوں، اسٹریکس اور انعامات کے ساتھ حوصلہ افزائی اور متاثر رہیں۔',
   appName: 'نور القرآن',
   searchQuranTitle: 'قرآن تلاش کریں',
   searchPlaceholder: 'آیات، سورتیں، کلیدی الفاظ تلاش کریں...',
@@ -1486,7 +1595,8 @@ export const URDU_TRANSLATIONS: Translations = {
   surahAyah: 'سورت {surahNumber}، آیت {ayahNumber}',
   ayahNotFound: 'آیت نہیں ملی',
   editScreenInfoTitle: 'اس اسکرین کے لیے کوڈ کھولیں:',
-  editScreenInfoDescription: 'کسی بھی متن کو تبدیل کریں، فائل کو محفوظ کریں، اور آپ کی ایپ خود بخود اپ ڈیٹ ہو جائے گی۔',
+  editScreenInfoDescription:
+    'کسی بھی متن کو تبدیل کریں، فائل کو محفوظ کریں، اور آپ کی ایپ خود بخود اپ ڈیٹ ہو جائے گی۔',
   loadingFontsEllipsis: 'فونٹس لوڈ ہو رہے ہیں...',
   preparingQuranExperienceEllipsis: 'آپ کے قرآن کے تجربے کی تیاری ہو رہی ہے...',
   checkingAppStateEllipsis: 'ایپ کی حالت چیک کی جا رہی ہے...',
@@ -1546,12 +1656,14 @@ export const URDU_TRANSLATIONS: Translations = {
   mustHave8Characters: '8 حروف ہونے چاہئیں۔',
   useAlphabetsAndNumbers: 'A-Z حروف اور 0-9 نمبر استعمال کریں (خصوصی حروف تجویز کردہ)۔',
   mustHaveUpperLower: 'ایک بڑا حرف، ایک چھوٹا حرف، ایک نمبر اور ایک خصوصی حرف ہونا چاہیے۔',
-  useSpecialCharacters: 'صرف یہ خصوصی حروف استعمال کریں (! @ # $ % ^ & * \' & + \' )۔',
+  useSpecialCharacters: "صرف یہ خصوصی حروف استعمال کریں (! @ # $ % ^ & * ' & + ' )۔",
   accountSettings: 'اکاؤنٹ کی ترتیبات',
   deleteYourAccount: 'اپنا اکاؤنٹ حذف کریں',
   deactivateYourAccount: 'اپنا اکاؤنٹ غیر فعال کریں',
-  deleteAccountConfirm: 'کیا آپ واقعی اپنا اکاؤنٹ حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔',
-  deactivateAccountConfirm: 'کیا آپ واقعی اپنا اکاؤنٹ غیر فعال کرنا چاہتے ہیں؟ آپ دوبارہ لاگ ان کر کے اسے فعال کر سکتے ہیں۔',
+  deleteAccountConfirm:
+    'کیا آپ واقعی اپنا اکاؤنٹ حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔',
+  deactivateAccountConfirm:
+    'کیا آپ واقعی اپنا اکاؤنٹ غیر فعال کرنا چاہتے ہیں؟ آپ دوبارہ لاگ ان کر کے اسے فعال کر سکتے ہیں۔',
 
   // Appearance
   theme: 'تھیم',
@@ -1625,4 +1737,21 @@ export const URDU_TRANSLATIONS: Translations = {
   invalidPassword: 'غلط پاس ورڈ',
   passwordsDoNotMatch: 'پاس ورڈ مماثل نہیں ہیں',
   requiredField: 'یہ فیلڈ ضروری ہے',
+
+  // Goal Detail Screen
+  goalDetails: 'مقصد کی تفصیلات',
+  overallProgress: 'مجموعی پیشرفت',
+  completed: 'مکمل',
+  active: 'فعال',
+  remaining: 'باقی',
+  surahs: 'سورتیں',
+  juz: 'پارے',
+  topics: 'موضوعات',
+  goalNotFound: 'مقصد نہیں ملا',
+  goBack: 'واپس جائیں',
+  deleteGoal: 'مقصد حذف کریں',
+  deleteGoalConfirm: 'کیا آپ واقعی حذف کرنا چاہتے ہیں',
+  complete: 'مکمل',
+  expired: 'ختم ہو گیا',
+  lastReadOn: 'آخری بار پڑھا',
 };

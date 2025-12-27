@@ -10,8 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useCustomAlert } from '../context/CustomAlertContext';
@@ -28,6 +30,7 @@ export default function EditProfile({ navigation }) {
     firstName: '',
     lastName: '',
     email: '',
+    profilePicture: null,
   });
 
   // State for modals
@@ -42,6 +45,7 @@ export default function EditProfile({ navigation }) {
   // Loading states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Load user profile on mount
   useEffect(() => {
@@ -57,6 +61,7 @@ export default function EditProfile({ navigation }) {
         lastName: profile.last_name || '',
         fullName: `${profile.first_name || ''} ${profile.last_name || ''}`,
         email: profile.email || '',
+        profilePicture: profile.profile_picture || null,
       });
     } catch (error) {
       // Could not load profile
@@ -132,8 +137,118 @@ export default function EditProfile({ navigation }) {
   };
 
   // Handle profile picture change
-  const handleChangeProfilePicture = () => {
-    // TODO: Implement image picker
+  const handleChangeProfilePicture = async () => {
+    try {
+      // Request permissions
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        showAlert(
+          t('permissionRequired') || 'Permission Required',
+          t('cameraPermissionMessage') || 'Please allow access to your photos to upload a profile picture.',
+          'warning'
+        );
+        return;
+      }
+
+      // Show options: Camera or Gallery
+      showAlert(
+        t('selectImage') || 'Select Profile Picture',
+        t('chooseImageSource') || 'Choose image source',
+        'info',
+        [
+          {
+            text: t('camera') || 'Camera',
+            onPress: () => openCamera(),
+          },
+          {
+            text: t('gallery') || 'Gallery',
+            onPress: () => openGallery(),
+          },
+          {
+            text: t('cancel') || 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showAlert(t('error') || 'Error', t('failedToPickImage') || 'Failed to pick image', 'error');
+    }
+  };
+
+  const openCamera = async () => {
+    try {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!cameraPermission.granted) {
+        showAlert(t('permissionRequired') || 'Permission Required', t('cameraPermissionMessage') || 'Camera permission is required', 'warning');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error);
+    }
+  };
+
+  const openGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening gallery:', error);
+    }
+  };
+
+  const uploadProfilePicture = async (imageUri) => {
+    try {
+      setUploadingImage(true);
+
+      // Create form data
+      const formData = new FormData();
+      const filename = imageUri.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('profile_picture', {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      });
+
+      // Upload to backend
+      const response = await apiService.uploadProfilePicture(formData);
+
+      if (response.profile_picture) {
+        setUserData({
+          ...userData,
+          profilePicture: response.profile_picture,
+        });
+        showAlert(t('success') || 'Success', t('profilePictureUpdated') || 'Profile picture updated successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      showAlert(t('error') || 'Error', t('failedToUploadImage') || 'Failed to upload profile picture', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   return (
@@ -156,15 +271,29 @@ export default function EditProfile({ navigation }) {
         {/* Profile Picture Section */}
         <View className="items-center border-b border-gray-100 bg-white px-6 py-8">
           <View className="relative">
-            <View className="h-24 w-24 items-center justify-center rounded-full bg-gray-700">
-              <Ionicons name="person" size={48} color={colors.surface} />
-            </View>
+            {/* Profile Picture */}
+            {userData.profilePicture ? (
+              <Image
+                source={{ uri: userData.profilePicture }}
+                className="h-24 w-24 rounded-full bg-gray-300"
+                style={{ borderWidth: 3, borderColor: colors.primary }}
+              />
+            ) : (
+              <View className="h-24 w-24 items-center justify-center rounded-full bg-gray-700">
+                <Ionicons name="person" size={48} color={colors.surface} />
+              </View>
+            )}
 
             {/* Edit Icon */}
             <TouchableOpacity
-              className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-gray-200 bg-white"
-              onPress={handleChangeProfilePicture}>
-              <Ionicons name="camera" size={16} color={colors.textSecondary} />
+              className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-600"
+              onPress={handleChangeProfilePicture}
+              disabled={uploadingImage}>
+              {uploadingImage ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="camera" size={16} color="#fff" />
+              )}
             </TouchableOpacity>
           </View>
         </View>

@@ -20,11 +20,11 @@ export default function Header() {
         paddingHorizontal: 25,
         paddingTop: 10,
       }}>
-      <TouchableOpacity onPress={() => navigation.navigate('UserSettings')}>
+      <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
         <FontAwesome6 name="user-circle" size={24} color={colors.text} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => console.log('Right')}>
+      <TouchableOpacity onPress={() => navigation.navigate('ReadingScreen')}>
         <MaterialIcons name="display-settings" size={24} color={colors.text} />
       </TouchableOpacity>
     </View>

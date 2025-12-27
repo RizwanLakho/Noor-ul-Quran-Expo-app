@@ -23,20 +23,22 @@ export default function ReadingScreen({ navigation }) {
 
   // State for page layout
   const [isPageLayoutExpanded, setIsPageLayoutExpanded] = useState(true);
-  const [arabicVerseEnabled, setArabicVerseEnabled] = useState(true);
+  const [arabicVerseEnabled, setArabicVerseEnabled] = useState(quranAppearance.arabicTextEnabled);
   const [translationEnabled, setTranslationEnabled] = useState(quranAppearance.translationEnabled);
+  const [wordByWordEnabled, setWordByWordEnabled] = useState(quranAppearance.wordByWordEnabled);
 
   // State for Arabic Verse settings
   const [isArabicVerseExpanded, setIsArabicVerseExpanded] = useState(false);
   const [selectedQuranFont, setSelectedQuranFont] = useState(quranAppearance.arabicFont);
   const [arabicFontSize, setArabicFontSize] = useState(quranAppearance.textSize);
+  const [selectedTextColor, setSelectedTextColor] = useState(quranAppearance.textColor);
 
   // State for Translation settings
   const [isTranslationExpanded, setIsTranslationExpanded] = useState(false);
   const [selectedTranslation, setSelectedTranslation] = useState(
     quranAppearance.selectedTranslatorName || t('noTranslatorSelected')
   );
-  const [translationFontSize, setTranslationFontSize] = useState(16);
+  const [translationFontSize, setTranslationFontSize] = useState(quranAppearance.translationTextSize);
 
   // State for preview
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(true);
@@ -46,10 +48,38 @@ export default function ReadingScreen({ navigation }) {
     setSelectedTranslation(quranAppearance.selectedTranslatorName || t('noTranslatorSelected'));
   }, [quranAppearance.selectedTranslatorName]);
 
+  // Handle Arabic toggle with auto-enable logic
+  const handleArabicToggle = (value) => {
+    if (!value && !translationEnabled) {
+      // Auto-enable translation if user tries to disable both
+      setTranslationEnabled(true);
+    }
+    setArabicVerseEnabled(value);
+  };
+
+  // Handle Translation toggle with auto-enable logic
+  const handleTranslationToggle = (value) => {
+    if (!value && !arabicVerseEnabled) {
+      // Auto-enable Arabic if user tries to disable both
+      setArabicVerseEnabled(true);
+    }
+    setTranslationEnabled(value);
+  };
+
   // Quran font options
   const quranFonts = [
     { id: 1, name: t('quranicFontName'), value: 'quranic' },
     { id: 2, name: t('uthmaniFontName'), value: 'uthman' },
+  ];
+
+  // Text colors for Quran
+  const textColors = [
+    { id: 1, name: t('colorBlack'), value: '#000000' },
+    { id: 2, name: t('colorDarkGray'), value: '#374151' },
+    { id: 3, name: t('colorTeal'), value: '#2EBBC3' },
+    { id: 4, name: t('colorBlue'), value: '#3B82F6' },
+    { id: 5, name: t('colorGreen'), value: '#10B981' },
+    { id: 6, name: t('colorBrown'), value: '#92400E' },
   ];
 
   // Handle save settings
@@ -59,9 +89,11 @@ export default function ReadingScreen({ navigation }) {
       updateQuranAppearance({
         arabicFont: selectedQuranFont,
         textSize: arabicFontSize,
+        translationTextSize: translationFontSize,
+        textColor: selectedTextColor,
+        arabicTextEnabled: arabicVerseEnabled,
         translationEnabled: translationEnabled,
-        // selectedTranslation, // This is just for display, not a setting to be saved directly here
-        // translationFontSize // This should be part of quranAppearance if you want to save it
+        wordByWordEnabled: wordByWordEnabled,
       });
 
       showAlert(t('success'), t('settingsSavedSuccess'), 'success');
@@ -117,7 +149,7 @@ export default function ReadingScreen({ navigation }) {
                 </StyledText>
                 <Switch
                   value={arabicVerseEnabled}
-                  onValueChange={setArabicVerseEnabled}
+                  onValueChange={handleArabicToggle}
                   trackColor={{ false: '#D1D5DB', true: '#06B6D4' }}
                   thumbColor={arabicVerseEnabled ? '#fff' : '#f4f3f4'}
                 />
@@ -127,16 +159,33 @@ export default function ReadingScreen({ navigation }) {
               <View className="my-4 border-t border-gray-200" />
 
               {/* Translation Toggle */}
-              <View className="flex-row items-center justify-between">
+              <View className="mb-4 flex-row items-center justify-between">
                 <StyledText
                   className="text-base font-medium text-gray-900">
                   {t('translation')}
                 </StyledText>
                 <Switch
                   value={translationEnabled}
-                  onValueChange={setTranslationEnabled}
+                  onValueChange={handleTranslationToggle}
                   trackColor={{ false: '#D1D5DB', true: '#06B6D4' }}
                   thumbColor={translationEnabled ? '#fff' : '#f4f3f4'}
+                />
+              </View>
+
+              {/* Divider */}
+              <View className="my-4 border-t border-gray-200" />
+
+              {/* Word by Word Toggle */}
+              <View className="flex-row items-center justify-between">
+                <StyledText
+                  className="text-base font-medium text-gray-900">
+                  Word by Word
+                </StyledText>
+                <Switch
+                  value={wordByWordEnabled}
+                  onValueChange={setWordByWordEnabled}
+                  trackColor={{ false: '#D1D5DB', true: '#06B6D4' }}
+                  thumbColor={wordByWordEnabled ? '#fff' : '#f4f3f4'}
                 />
               </View>
             </View>
@@ -208,6 +257,44 @@ export default function ReadingScreen({ navigation }) {
                   </View>
                 </View>
 
+                {/* Text Color Selection */}
+                <View className="mb-4">
+                  <StyledText className="mb-3 text-sm font-semibold text-gray-700">
+                    {t('textColor')}
+                  </StyledText>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {textColors.map((colorOption) => (
+                      <TouchableOpacity
+                        key={colorOption.id}
+                        onPress={() => setSelectedTextColor(colorOption.value)}
+                        style={{
+                          width: '30%',
+                          alignItems: 'center',
+                          padding: 12,
+                          borderRadius: 8,
+                          backgroundColor: selectedTextColor === colorOption.value ? '#EFF6FF' : '#F9FAFB',
+                          borderWidth: 2,
+                          borderColor: selectedTextColor === colorOption.value ? '#3B82F6' : '#E5E7EB',
+                        }}>
+                        <View
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            backgroundColor: colorOption.value,
+                            marginBottom: 8,
+                            borderWidth: 2,
+                            borderColor: '#E5E7EB',
+                          }}
+                        />
+                        <StyledText style={{ fontSize: 11, color: '#374151', textAlign: 'center' }}>
+                          {colorOption.name}
+                        </StyledText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
                 {/* Font Size Slider */}
                 <View>
                   <View className="mb-2 flex-row items-center justify-between">
@@ -220,8 +307,8 @@ export default function ReadingScreen({ navigation }) {
                     <StyledText className="mr-2 text-xs text-gray-500">حَّ</StyledText>
                     <Slider
                       style={{ flex: 1, height: 40 }}
-                      minimumValue={20}
-                      maximumValue={48}
+                      minimumValue={9}
+                      maximumValue={18}
                       step={1}
                       value={arabicFontSize}
                       onValueChange={setArabicFontSize}
@@ -291,8 +378,8 @@ export default function ReadingScreen({ navigation }) {
                     <StyledText className="mr-2 text-xs text-gray-500">Aa</StyledText>
                     <Slider
                       style={{ flex: 1, height: 40 }}
-                      minimumValue={12}
-                      maximumValue={24}
+                      minimumValue={9}
+                      maximumValue={18}
                       step={1}
                       value={translationFontSize}
                       onValueChange={setTranslationFontSize}
@@ -336,19 +423,87 @@ export default function ReadingScreen({ navigation }) {
                   <View className="mb-2 flex-row items-center justify-between">
                     <View className="flex-row items-center gap-2">
                       <Ionicons name="volume-medium-outline" size={18} color="#6B7280" />
-                      <StyledText
-                        className="text-right text-gray-800"
-                        style={{
-                          fontSize: arabicFontSize,
-                          fontFamily: selectedQuranFont,
-                        }}>
-                        بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
-                      </StyledText>
                     </View>
                     <TouchableOpacity>
                       <Ionicons name="star-outline" size={20} color="#6B7280" />
                     </TouchableOpacity>
                   </View>
+
+                  {/* Word by Word Preview */}
+                  {wordByWordEnabled ? (
+                    <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'flex-start', gap: 8 }}>
+                      <View style={{ alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
+                        <StyledText
+                          style={{
+                            fontSize: arabicFontSize,
+                            fontFamily: selectedQuranFont,
+                            color: selectedTextColor,
+                          }}>
+                          بِسۡمِ
+                        </StyledText>
+                        <StyledText
+                          className="text-gray-600"
+                          style={{ fontSize: arabicFontSize * 0.7 }}>
+                          In the name
+                        </StyledText>
+                      </View>
+                      <View style={{ alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
+                        <StyledText
+                          style={{
+                            fontSize: arabicFontSize,
+                            fontFamily: selectedQuranFont,
+                            color: selectedTextColor,
+                          }}>
+                          ٱللَّهِ
+                        </StyledText>
+                        <StyledText
+                          className="text-gray-600"
+                          style={{ fontSize: arabicFontSize * 0.7 }}>
+                          of Allah
+                        </StyledText>
+                      </View>
+                      <View style={{ alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
+                        <StyledText
+                          style={{
+                            fontSize: arabicFontSize,
+                            fontFamily: selectedQuranFont,
+                            color: selectedTextColor,
+                          }}>
+                          ٱلرَّحۡمَٰنِ
+                        </StyledText>
+                        <StyledText
+                          className="text-gray-600"
+                          style={{ fontSize: arabicFontSize * 0.7 }}>
+                          the Most Gracious
+                        </StyledText>
+                      </View>
+                      <View style={{ alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
+                        <StyledText
+                          style={{
+                            fontSize: arabicFontSize,
+                            fontFamily: selectedQuranFont,
+                            color: selectedTextColor,
+                          }}>
+                          ٱلرَّحِيمِ
+                        </StyledText>
+                        <StyledText
+                          className="text-gray-600"
+                          style={{ fontSize: arabicFontSize * 0.7 }}>
+                          the Most Merciful
+                        </StyledText>
+                      </View>
+                    </View>
+                  ) : (
+                    <StyledText
+                      className="text-right"
+                      style={{
+                        fontSize: arabicFontSize,
+                        fontFamily: selectedQuranFont,
+                        color: selectedTextColor,
+                      }}>
+                      بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ
+                    </StyledText>
+                  )}
                 </View>
               )}
 

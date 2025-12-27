@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useSettings } from '../../../context/SettingsContext';
 
 interface DailyAyah {
   id: number;
@@ -27,6 +28,7 @@ export default function DailyAyahCard({
   onRefresh,
 }: DailyAyahCardProps) {
   const { colors } = useTheme();
+  const { quranAppearance } = useSettings();
 
   return (
     <View style={styles.VerseContainer}>
@@ -71,7 +73,7 @@ export default function DailyAyahCard({
             <Text style={[styles.translationText, { color: colors.error }]}>{error}</Text>
           ) : dailyAyah ? (
             <>
-              <Text style={[styles.arabicText, { color: colors.text }]}>{dailyAyah.text}</Text>
+              <Text style={[styles.arabicText, { color: colors.text, fontFamily: quranAppearance.arabicFont }]}>{dailyAyah.text}</Text>
               <Text style={[styles.translationText, { color: colors.textSecondary }]}>
                 {dailyAyah.translation}
               </Text>

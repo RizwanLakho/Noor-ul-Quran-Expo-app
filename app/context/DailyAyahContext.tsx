@@ -42,22 +42,49 @@ export const DailyAyahProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   /**
-   * Fetch random ayah from API
+   * Fetch random ayah from API with translation
    */
   const fetchRandomAyah = async (): Promise<DailyAyah | null> => {
     try {
+      // 1. Get random ayah (Arabic text)
       const data = await apiService.getRandomAyah();
+
+      const surahNumber = data.ayah?.sura || data.sura || 0;
+      const ayahNumber = data.ayah?.aya || data.aya || 0;
+
+      let translation = '';
+
+      // 2. Fetch translation for this ayah
+      try {
+        // Get translations for the entire surah (with default translator: Ahmed Ali, language: en)
+        const translationData = await apiService.getSurahTranslations(surahNumber, 'Ahmed Ali', 'en');
+
+        // Find the matching ayah in the translations
+        const matchingAyah = translationData?.ayahs?.find((t: any) => t.aya === ayahNumber);
+        translation = matchingAyah?.text || 'Translation not available';
+      } catch (translationError) {
+        console.log('⚠️ Could not fetch translation, using placeholder');
+        translation = 'Translation not available';
+      }
 
       // Transform the API response to match our DailyAyah interface
       const ayahData: DailyAyah = {
-        id: data.ayah?.id || data.id,
+        id: data.ayah?.index || data.index || 0,
         text: data.ayah?.text || data.text || '',
-        translation: data.ayah?.translation || data.translation || '',
-        surahName: data.surah?.name || data.surahName || '',
-        surahNumber: data.surah?.number || data.surahNumber || 0,
-        ayahNumber: data.ayah?.numberInSurah || data.ayahNumber || 0,
+        translation: translation,
+        surahName: data.ayah?.surah_name_english || data.surah_name_english || '',
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
         date: getTodayDate(),
       };
+
+      console.log('✅ Daily Ayah fetched:', {
+        surah: ayahData.surahName,
+        surahNumber: ayahData.surahNumber,
+        ayahNumber: ayahData.ayahNumber,
+        hasTranslation: !!ayahData.translation,
+        translation: ayahData.translation.substring(0, 50) + '...'
+      });
 
       return ayahData;
     } catch (err) {
@@ -87,12 +114,15 @@ export const DailyAyahProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (storedData) {
         const parsedData: DailyAyah = JSON.parse(storedData);
 
-        // Check if the stored ayah is from today
-        if (parsedData.date === today) {
+        // Check if the stored ayah is from today AND has translation
+        if (parsedData.date === today && parsedData.translation) {
+          console.log('📦 Using cached ayah from today');
           setDailyAyah(parsedData);
           setInitialized(true);
           setLoading(false);
           return;
+        } else {
+          console.log('🔄 Cached ayah is old or missing translation, fetching new one');
         }
       }
 
@@ -136,6 +166,7 @@ export const DailyAyahProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (newAyah) {
         await AsyncStorage.setItem(DAILY_AYAH_STORAGE_KEY, JSON.stringify(newAyah));
         setDailyAyah(newAyah);
+        console.log('🔄 Ayah refreshed successfully');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to refresh ayah';

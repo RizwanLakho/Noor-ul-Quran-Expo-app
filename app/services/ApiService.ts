@@ -296,6 +296,37 @@ class ApiService {
   }
 
   /**
+   * Get word-by-word data for a specific ayah
+   */
+  async getAyahWords(surahNumber: number, ayahNumber: number): Promise<any> {
+    return this.fetch(`/word-by-word/${surahNumber}/${ayahNumber}`);
+  }
+
+  /**
+   * Get word-by-word data for entire surah
+   */
+  async getSurahWords(surahNumber: number): Promise<any> {
+    return this.fetch(`/word-by-word/surah/${surahNumber}`);
+  }
+
+  /**
+   * Get word translations for a specific word
+   */
+  async getWordTranslations(wordId: number, language?: string): Promise<any> {
+    const url = language
+      ? `/word-by-word/word/${wordId}/translations?language=${language}`
+      : `/word-by-word/word/${wordId}/translations`;
+    return this.fetch(url);
+  }
+
+  /**
+   * Get word-by-word statistics
+   */
+  async getWordByWordStats(): Promise<any> {
+    return this.fetch('/word-by-word/stats');
+  }
+
+  /**
    * Get translations by translator name for a specific surah
    * @param translatorName - Name of the translator (e.g., "Ahmed Ali", "Sahih International")
    * @param language - Language code (e.g., "en", "ar", "ur")
@@ -381,6 +412,15 @@ class ApiService {
    */
   async getRandomAyah(): Promise<any> {
     return this.fetch(API_ENDPOINTS.QURAN.RANDOM_AYAH);
+  }
+
+  /**
+   * Get surah with translations
+   * Endpoint: GET /api/translations/:translator/:language?surah=:surahNumber
+   */
+  async getSurahTranslations(surahNumber: number, translator: string = 'Ahmed Ali', language: string = 'en'): Promise<any> {
+    const url = `/translations/${encodeURIComponent(translator)}/${language}?surah=${surahNumber}`;
+    return this.fetch(url);
   }
 
   // ==================== QUIZ ENDPOINTS ====================
@@ -652,6 +692,35 @@ class ApiService {
   }
 
   /**
+   * Upload profile picture
+   */
+  async uploadProfilePicture(formData: FormData): Promise<any> {
+    const url = `${this.baseURL}/users/me/profile-picture`;
+
+    const headers: Record<string, string> = {};
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw {
+        message: errorData.message || 'Failed to upload profile picture',
+        status: response.status,
+        details: errorData,
+      };
+    }
+
+    return response.json();
+  }
+
+  /**
    * Update user email
    */
   async updateUserEmail(email: string): Promise<any> {
@@ -772,6 +841,26 @@ class ApiService {
     return this.fetch('/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  }
+
+  /**
+   * Request password reset (Forgot Password)
+   */
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, newPassword: string, email?: string): Promise<{ success: boolean; message: string }> {
+    return this.fetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword, email }),
     });
   }
 
@@ -975,6 +1064,25 @@ class ApiService {
     return response.data;
   }
 
+  /**
+   * Record Quran reading session
+   * POST /api/progress/reading-session
+   */
+  async recordReadingSession(data: {
+    type: 'surah' | 'juz' | 'topic';
+    surah_number?: number;
+    juz_number?: number;
+    topic_id?: number;
+    ayahs_read: number;
+    time_spent_seconds: number;
+    last_ayah_read?: number;
+  }): Promise<{ success: boolean; message: string }> {
+    return this.fetch('/progress/reading-session', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // ==================== DAILY GOALS ====================
 
   /**
@@ -1026,6 +1134,213 @@ class ApiService {
     return this.fetch(`/goals/${goalId}`, {
       method: 'DELETE',
     });
+  }
+
+  // ==================== READING GOALS ENDPOINTS ====================
+
+  /**
+   * Get user's reading goals
+   * GET /api/reading-goals
+   */
+  async getReadingGoals(): Promise<any> {
+    return this.fetch('/reading-goals');
+  }
+
+  /**
+   * Create a new reading goal
+   * POST /api/reading-goals
+   */
+  async createReadingGoal(data: {
+    title: string;
+    description?: string;
+    durationValue: number;
+    durationUnit: 'days' | 'weeks' | 'months' | 'year';
+    selectedSurahs?: { id: number; name: string }[];
+    selectedJuz?: { id: number; name: string }[];
+    selectedTopics?: { id: number; name: string }[];
+  }): Promise<any> {
+    return this.fetch('/reading-goals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a reading goal
+   * PUT /api/reading-goals/:id
+   */
+  async updateReadingGoal(
+    goalId: string,
+    data: {
+      title: string;
+      description?: string;
+      durationValue: number;
+      durationUnit: 'days' | 'weeks' | 'months' | 'year';
+      selectedSurahs?: { id: number; name: string }[];
+      selectedJuz?: { id: number; name: string }[];
+      selectedTopics?: { id: number; name: string }[];
+    }
+  ): Promise<any> {
+    return this.fetch(`/reading-goals/${goalId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a reading goal
+   * DELETE /api/reading-goals/:id
+   */
+  async deleteReadingGoal(goalId: string): Promise<any> {
+    return this.fetch(`/reading-goals/${goalId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Mark target as completed
+   * POST /api/reading-goals/:id/complete
+   */
+  async markTargetCompleted(
+    goalId: string,
+    data: {
+      type: 'surah' | 'juz' | 'topic';
+      itemId: number;
+    }
+  ): Promise<any> {
+    return this.fetch(`/reading-goals/${goalId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ==================== AYAH BOOKMARKS ENDPOINTS ====================
+
+  /**
+   * Get all user ayah bookmarks
+   * GET /api/ayah-bookmarks
+   */
+  async getAyahBookmarks(): Promise<any> {
+    try {
+      const response = await this.fetch('/ayah-bookmarks');
+      return response.bookmarks || [];
+    } catch (error) {
+      console.error('Failed to fetch ayah bookmarks:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add ayah bookmark
+   * POST /api/ayah-bookmarks
+   */
+  async addAyahBookmark(bookmark: {
+    surahNumber: number;
+    ayahNumber: number;
+    surahName: string;
+    arabicText: string;
+    translation: string;
+  }): Promise<any> {
+    try {
+      const response = await this.fetch('/ayah-bookmarks', {
+        method: 'POST',
+        body: JSON.stringify(bookmark),
+      });
+      return response.bookmark;
+    } catch (error) {
+      console.error('Failed to add ayah bookmark:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove ayah bookmark
+   * DELETE /api/ayah-bookmarks/:id
+   */
+  async removeAyahBookmark(id: string): Promise<any> {
+    try {
+      return await this.fetch(`/ayah-bookmarks/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to remove ayah bookmark:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if ayah is bookmarked
+   * GET /api/ayah-bookmarks/check/:surahNumber/:ayahNumber
+   */
+  async isAyahBookmarked(surahNumber: number, ayahNumber: number): Promise<boolean> {
+    try {
+      const response = await this.fetch(`/ayah-bookmarks/check/${surahNumber}/${ayahNumber}`);
+      return response.isBookmarked || false;
+    } catch (error) {
+      console.error('Failed to check ayah bookmark:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get user notifications
+   * GET /api/notifications
+   */
+  async getNotifications(unreadOnly: boolean = false): Promise<any> {
+    try {
+      const query = unreadOnly ? '?unread_only=true' : '';
+      const response = await this.fetch(`/notifications${query}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark notification as read
+   * PUT /api/notifications/:id/read
+   */
+  async markNotificationAsRead(id: number): Promise<any> {
+    try {
+      const response = await this.fetch(`/notifications/${id}/read`, {
+        method: 'PUT',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   * PUT /api/notifications/read-all
+   */
+  async markAllNotificationsAsRead(): Promise<any> {
+    try {
+      return await this.fetch('/notifications/read-all', {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete notification
+   * DELETE /api/notifications/:id
+   */
+  async deleteNotification(id: number): Promise<any> {
+    try {
+      return await this.fetch(`/notifications/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      throw error;
+    }
   }
 }
 
