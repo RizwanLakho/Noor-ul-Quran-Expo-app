@@ -13,7 +13,14 @@ export interface QuranAppearanceSettings {
   arabicFont: 'quranic' | 'uthman';
   selectedTranslatorName: string; // Name of selected translator
   selectedTranslatorLanguage: string; // Language of selected translator (en, ur, etc)
-  selectedReciter: string; // Reciter folder name for audio (e.g., 'Alafasy_128kbps')
+  selectedReciter: string; // Reciter identifier for Arabic audio (e.g., 'ar.alafasy')
+  // Audio settings
+  translatorRecitorEnabled: boolean; // Enable translation audio playback
+  selectedTranslationReciter: string; // Translation audio reciter (e.g., 'en.walk', 'ur.khan')
+  playbackMode: 'arabic' | 'translation' | 'both'; // What to play: Arabic only, Translation only, or Both sequential
+  playbackSpeed: number; // 0.5, 0.75, 1.0, 1.25, 1.5, 2.0
+  autoRepeat: boolean; // Auto-repeat current ayah
+  isMuted: boolean; // Mute state
 }
 
 export interface AppSettings {
@@ -37,7 +44,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
     arabicFont: 'uthman',
     selectedTranslatorName: '', // Will be set to first available translator
     selectedTranslatorLanguage: '', // Will be set when translator is selected
-    selectedReciter: 'Alafasy_128kbps', // Default reciter
+    selectedReciter: 'ar.alafasy', // Default reciter (AlQuran.cloud API format)
+    // Audio settings defaults
+    translatorRecitorEnabled: false, // Translation audio disabled by default
+    selectedTranslationReciter: 'en.walk', // Default English translation reciter
+    playbackMode: 'arabic', // Play Arabic only by default
+    playbackSpeed: 1.0, // Normal playback speed
+    autoRepeat: false, // No auto-repeat by default
+    isMuted: false, // Not muted by default
   },
   notificationsEnabled: true,
   soundEnabled: true,
@@ -566,6 +580,24 @@ export interface Translations {
   translatorSelection: string;
   noTranslatorsAvailable: string;
   loadingTranslators: string;
+
+  // Audio Settings
+  audioSettings: string;
+  translatorRecitor: string;
+  translatorRecitorDesc: string;
+  selectReciter: string;
+  playbackSpeed: string;
+  audioSettingsInfo: string;
+  reciterChanged: string;
+  reciterChangedTo: string;
+  listeningTo: string;
+  english: string;
+  urdu: string;
+  availableReciters: string;
+  translationRecitersEnglish: string;
+  translationRecitersUrdu: string;
+  translationRecitersArabic: string;
+  translationRecitersPersian: string;
 
   // Quran Settings
   quranSettings: string;
@@ -1129,6 +1161,24 @@ export const ENGLISH_TRANSLATIONS: Translations = {
   noTranslatorsAvailable: 'No translators available',
   loadingTranslators: 'Loading translators...',
 
+  // Audio Settings
+  audioSettings: 'Audio Settings',
+  translatorRecitor: 'Translation Audio',
+  translatorRecitorDesc: 'Enable to show English/Urdu translation audio options',
+  selectReciter: 'Select Quran Reciter',
+  playbackSpeed: 'Playback Speed',
+  audioSettingsInfo: 'Change audio settings to customize your Quran listening experience. You can change the reciter, enable translation audio, and adjust playback speed.',
+  reciterChanged: 'Reciter Changed',
+  reciterChangedTo: 'Reciter changed to',
+  listeningTo: 'Listening to',
+  english: 'English',
+  urdu: 'Urdu',
+  availableReciters: 'available reciters',
+  translationRecitersEnglish: 'Translation Audio - English',
+  translationRecitersUrdu: 'Translation Audio - Urdu',
+  translationRecitersArabic: 'Translation Audio - Arabic',
+  translationRecitersPersian: 'Translation Audio - Persian',
+
   // Quran Settings
   quranSettings: 'Quran Settings',
   quranAppearance: 'Quran Appearance',
@@ -1689,6 +1739,24 @@ export const URDU_TRANSLATIONS: Translations = {
   translatorSelection: 'مترجم کا انتخاب',
   noTranslatorsAvailable: 'کوئی مترجم دستیاب نہیں',
   loadingTranslators: 'مترجمین لوڈ ہو رہے ہیں...',
+
+  // Audio Settings
+  audioSettings: 'آڈیو کی ترتیبات',
+  translatorRecitor: 'ترجمہ آڈیو',
+  translatorRecitorDesc: 'انگلش/اردو ترجمہ آڈیو کے اختیارات دکھانے کے لیے فعال کریں',
+  selectReciter: 'قرآن کا قاری منتخب کریں',
+  playbackSpeed: 'پلے بیک کی رفتار',
+  audioSettingsInfo: 'اپنے قرآن سننے کے تجربے کو اپنی مرضی کے مطابق بنانے کے لیے آڈیو کی ترتیبات تبدیل کریں۔ آپ قاری تبدیل کر سکتے ہیں، ترجمہ آڈیو فعال کر سکتے ہیں، اور پلے بیک کی رفتار ایڈجسٹ کر سکتے ہیں۔',
+  reciterChanged: 'قاری تبدیل ہو گیا',
+  reciterChangedTo: 'قاری تبدیل کیا گیا',
+  listeningTo: 'سن رہے ہیں',
+  english: 'English',
+  urdu: 'اردو',
+  availableReciters: 'دستیاب قاری',
+  translationRecitersEnglish: 'ترجمہ آڈیو - انگلش',
+  translationRecitersUrdu: 'ترجمہ آڈیو - اردو',
+  translationRecitersArabic: 'ترجمہ آڈیو - عربی',
+  translationRecitersPersian: 'ترجمہ آڈیو - فارسی',
 
   // Quran Settings
   quranSettings: 'قرآن کی ترتیبات',

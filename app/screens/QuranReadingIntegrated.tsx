@@ -30,7 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function QuranReadingIntegrated({ route, navigation }: any) {
   const { colors, isDark } = useTheme();
-  const { quranAppearance } = useSettings();
+  const { quranAppearance, updateQuranAppearance } = useSettings();
   const { t, language } = useLanguage();
   const { showAlert } = useCustomAlert();
   const { bookmarks, addBookmark, removeBookmark, isBookmarked } = useBookmarks();
@@ -39,11 +39,13 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
 
   // Audio player state - Beautiful UI
   const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedReciter, setSelectedReciter] = useState('Alafasy_128kbps');
+  // Use reciter from settings context instead of local state
+  const selectedReciter = quranAppearance.selectedReciter || 'ar.alafasy';
   const [selectedTranslation, setSelectedTranslation] = useState(t('translationEng'));
   const [showReciterDropdown, setShowReciterDropdown] = useState(false);
   const [showTranslationDropdown, setShowTranslationDropdown] = useState(false);
   const [showReadingSettings, setShowReadingSettings] = useState(false);
+  const [showSpeedModal, setShowSpeedModal] = useState(false);
 
   // Animated scroll-based player control (hardware accelerated)
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -60,9 +62,12 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true); // Auto-play enabled by default
+  const [isMuted, setIsMuted] = useState(false); // Mute state
+  const [currentAudioType, setCurrentAudioType] = useState<'arabic' | 'translation'>('arabic'); // Track what's currently playing
 
   // Use ref to track current index to avoid stale state in callbacks
   const currentIndexRef = useRef(0);
+  const currentAudioTypeRef = useRef<'arabic' | 'translation'>('arabic');
 
   // FlatList ref for scroll control
   const flatListRef = useRef<any>(null);
@@ -107,14 +112,14 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     initialAyah,
   } = route?.params || {};
 
-  // Reciter options with their folder names for everyayah.com
+  // Reciter options with AlQuran.cloud API identifiers
   const reciters = [
-    { name: t('reciterAsSudais'), folder: 'Abdul_Basit_Murattal_192kbps' },
-    { name: t('reciterAlAfasy'), folder: 'Alafasy_128kbps' },
-    { name: t('reciterAlHusary'), folder: 'Husary_128kbps' },
-    { name: t('reciterAlMinshawi'), folder: 'Minshawy_Murattal_128kbps' },
-    { name: t('reciterAlGhamdi'), folder: 'Ghamadi_40kbps' },
-    { name: t('reciterMisharyRashid'), folder: 'Mishary_Rashid_Alafasy_128kbps' },
+    { name: t('reciterAsSudais'), folder: 'ar.abdurrahmaansudais' },
+    { name: t('reciterAlAfasy'), folder: 'ar.alafasy' },
+    { name: t('reciterAlHusary'), folder: 'ar.husary' },
+    { name: t('reciterAlMinshawi'), folder: 'ar.minshawi' },
+    { name: t('reciterAlGhamdi'), folder: 'ar.abdullahbasfar' },
+    { name: t('reciterMisharyRashid'), folder: 'ar.alafasy' },
   ];
 
   const translations = [
@@ -126,11 +131,34 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     t('translationDeutsch'),
   ];
 
-  // Audio CDN URL builder
-  const getAudioUrl = (surah: number, ayah: number): string => {
-    const surahPadded = String(surah).padStart(3, '0');
-    const ayahPadded = String(ayah).padStart(3, '0');
-    return `https://everyayah.com/data/${selectedReciter}/${surahPadded}${ayahPadded}.mp3`;
+  // Audio URL fetcher from AlQuran.cloud API
+  const getAudioUrl = async (surah: number, ayah: number, reciterEdition: string): Promise<string> => {
+    try {
+      // Use AlQuran.cloud API to get ayah with audio
+      const response = await fetch(
+        `https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/${reciterEdition}`
+      );
+      const data = await response.json();
+
+      if (data.code === 200 && data.data && data.data.audio) {
+        return data.data.audio;
+      } else {
+        // Fallback to default reciter if selected reciter doesn't have audio
+        const fallbackResponse = await fetch(
+          `https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/ar.alafasy`
+        );
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackData.code === 200 && fallbackData.data && fallbackData.data.audio) {
+          console.log('⚠️ Using fallback reciter (Alafasy)');
+          return fallbackData.data.audio;
+        }
+      }
+
+      throw new Error('No audio URL found');
+    } catch (err) {
+      console.error('Error fetching audio URL:', err);
+      throw err;
+    }
   };
 
   /**
@@ -331,6 +359,30 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     configureAudio();
   }, []);
 
+  // Apply mute state to current sound
+  useEffect(() => {
+    const applyMute = async () => {
+      if (sound) {
+        await sound.setIsMutedAsync(isMuted);
+      }
+    };
+    applyMute();
+  }, [isMuted, sound]);
+
+  // Apply playback speed to current sound
+  useEffect(() => {
+    const applySpeed = async () => {
+      if (sound) {
+        try {
+          await sound.setRateAsync(quranAppearance.playbackSpeed || 1.0, true);
+        } catch (err) {
+          console.error('Failed to set playback rate:', err);
+        }
+      }
+    };
+    applySpeed();
+  }, [quranAppearance.playbackSpeed, sound]);
+
   // Cleanup sound on unmount and save reading activity
   useEffect(() => {
     return () => {
@@ -479,28 +531,56 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     setPosition(status.positionMillis);
     setDuration(status.durationMillis || 0);
 
-    // When audio finishes, go to next ayah if auto-play is enabled
+    // When audio finishes, handle sequential playback
     if (status.didJustFinish && !status.isLooping) {
       setIsPlaying(false);
       setPosition(0);
 
-      // Use ref to get the actual current index (avoid stale state)
-      const nextIndex = currentIndexRef.current + 1;
+      const playbackMode = quranAppearance.playbackMode || 'arabic';
+      const currentType = currentAudioTypeRef.current;
+      const currentIndex = currentIndexRef.current;
 
-      if (autoPlayEnabled && nextIndex < ayahs.length) {
-        console.log(`🔄 Auto-playing next: ${nextIndex + 1}/${ayahs.length}`);
-        // Auto-play next ayah with minimal delay
-        setTimeout(() => {
-          playAyahAtIndex(nextIndex);
-        }, 100); // Minimal 100ms delay for smooth transition
+      console.log('🎯 Audio finished - Mode:', playbackMode, 'Type:', currentType, 'Index:', currentIndex);
+
+      // Handle 'both' mode: play Arabic first, then Translation, then next ayah
+      if (playbackMode === 'both') {
+        if (currentType === 'arabic') {
+          // Just finished Arabic, now play translation
+          console.log(`🔄 Playing translation for ayah ${currentIndex + 1}`);
+          setTimeout(() => {
+            playAyahAtIndex(currentIndex, 0, 'translation');
+          }, 500); // 500ms delay between Arabic and Translation
+        } else {
+          // Just finished Translation, move to next ayah if auto-play enabled
+          if (autoPlayEnabled && currentIndex + 1 < ayahs.length) {
+            console.log(`🔄 Auto-playing next ayah: ${currentIndex + 2}/${ayahs.length}`);
+            setTimeout(() => {
+              playAyahAtIndex(currentIndex + 1);
+            }, 500);
+          } else {
+            console.log('✅ Reached end of Surah/Juz');
+          }
+        }
       } else {
-        console.log('✅ Reached end of Surah/Juz');
+        // Normal mode (arabic or translation only)
+        if (autoPlayEnabled && currentIndex + 1 < ayahs.length) {
+          console.log(`🔄 Auto-playing next: ${currentIndex + 2}/${ayahs.length}`);
+          setTimeout(() => {
+            playAyahAtIndex(currentIndex + 1);
+          }, 500);
+        } else {
+          console.log('✅ Reached end of Surah/Juz');
+        }
       }
     }
   };
 
   // Play specific ayah by index with retry logic
-  const playAyahAtIndex = async (index: number, retryCount: number = 0) => {
+  const playAyahAtIndex = async (
+    index: number,
+    retryCount: number = 0,
+    audioType: 'arabic' | 'translation' | 'auto' = 'auto'
+  ) => {
     try {
       setIsLoadingAudio(true);
       const ayah = ayahs[index];
@@ -509,26 +589,68 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
         return;
       }
 
+      // Determine what audio to play based on playbackMode
+      const playbackMode = quranAppearance.playbackMode || 'arabic';
+      const selectedTranslationReciter = quranAppearance.selectedTranslationReciter || 'en.walk';
+
+      console.log('🎬 playAyahAtIndex called:', {
+        index,
+        audioType,
+        playbackMode,
+        selectedReciter,
+        selectedTranslationReciter
+      });
+
+      let reciterToUse = selectedReciter; // Default to Arabic reciter
+      let typeLabel = 'Arabic';
+
+      if (audioType === 'auto') {
+        // Auto mode: check playbackMode
+        if (playbackMode === 'translation') {
+          reciterToUse = selectedTranslationReciter;
+          typeLabel = 'Translation';
+        } else if (playbackMode === 'both') {
+          // For 'both' mode, we need to track which audio is currently playing
+          // We'll play Arabic first, then translation
+          reciterToUse = selectedReciter; // Start with Arabic
+          typeLabel = 'Arabic';
+        }
+      } else {
+        // Explicit type specified
+        if (audioType === 'translation') {
+          reciterToUse = selectedTranslationReciter;
+          typeLabel = 'Translation';
+        }
+      }
+
       // Unload previous sound
       if (sound) {
         await sound.unloadAsync();
       }
 
       // Load and play new audio
-      const audioUrl = getAudioUrl(ayah.sura, ayah.aya);
-      console.log(`🎵 Playing ayah ${index + 1}/${ayahs.length}: ${audioUrl}`);
+      const audioUrl = await getAudioUrl(ayah.sura, ayah.aya, reciterToUse);
+      console.log(`🎵 Playing ${typeLabel} ayah ${index + 1}/${ayahs.length}: ${audioUrl}`);
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: audioUrl },
-        { shouldPlay: true },
+        { shouldPlay: true, isMuted: isMuted },
         onPlaybackStatusUpdate
       );
 
       setSound(newSound);
       setCurrentAyahIndex(index);
       currentIndexRef.current = index; // Update ref immediately
+
+      // Track which audio type we're currently playing
+      const actualType = audioType === 'auto'
+        ? (playbackMode === 'translation' ? 'translation' : 'arabic')
+        : audioType;
+      setCurrentAudioType(actualType);
+      currentAudioTypeRef.current = actualType;
+
       setIsLoadingAudio(false);
-      console.log(`✅ Now playing ayah ${index + 1}/${ayahs.length}`);
+      console.log(`✅ Now playing ${typeLabel} ayah ${index + 1}/${ayahs.length}`);
     } catch (err) {
       console.error('Failed to load audio:', err);
 
@@ -536,7 +658,7 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
       if (retryCount < 2) {
         console.log(`🔄 Retrying audio load (attempt ${retryCount + 1}/2)...`);
         setTimeout(() => {
-          playAyahAtIndex(index, retryCount + 1);
+          playAyahAtIndex(index, retryCount + 1, audioType);
         }, 1000); // Wait 1 second before retry
       } else {
         // Max retries reached
@@ -621,6 +743,32 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Get reciter name from identifier (SHORT names for better UI)
+  const getReciterName = (identifier: string): string => {
+    const reciterNames: { [key: string]: string } = {
+      // Arabic Reciters (SHORT NAMES)
+      'ar.alafasy': 'Alafasy',
+      'ar.abdullahbasfar': 'Basfar',
+      'ar.abdurrahmaansudais': 'Sudais',
+      'ar.shaatree': 'Al Shatri',
+      'ar.ahmedajamy': 'Al Ajmi',
+      'ar.hanirifai': 'Rifai',
+      'ar.husary': 'Al-Hussary',
+      'ar.minshawi': 'Minshawi',
+      'ar.muhammadayyoub': 'Ayyub',
+      'ar.muhammadjibreel': 'Jibril',
+      'ar.mahermuaiqly': 'Al Muaiqly',
+      'ar.abdulsamad': 'Abdul Samad',
+      'ar.husarymujawwad': 'Hussary Mujawwad',
+      'ar.hudhaify': 'Hudhaify',
+      'ar.ibrahimakhdar': 'Akhdar',
+      'ar.saoodshuraym': 'Shuraym',
+      'ar.parhizgar': 'Parhizgar',
+      'ar.aymanswoaid': 'Sowaid',
+    };
+    return reciterNames[identifier] || identifier;
   };
 
   /**
@@ -1146,32 +1294,20 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
         <View
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ position: 'relative', flex: 1 }}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-              onPress={() => {
-                setShowReciterDropdown(!showReciterDropdown);
-                setShowTranslationDropdown(false);
-              }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Image
                 source={{ uri: 'https://via.placeholder.com/40' }}
                 style={{ marginRight: 12, height: 40, width: 40, borderRadius: 20 }}
               />
               <View>
                 <StyledText style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>
-                  {reciters.find((r) => r.folder === selectedReciter)?.name || t('reciterAlAfasy')}
+                  {getReciterName(selectedReciter)}
                 </StyledText>
                 <StyledText style={{ fontSize: 12, color: '#fff', opacity: 0.8 }}>
                   {duration > 0 ? formatTime(position) : '00:00'}
                 </StyledText>
               </View>
-            </TouchableOpacity>
-            <Dropdown
-              visible={showReciterDropdown}
-              options={reciters}
-              selected={selectedReciter}
-              onSelect={setSelectedReciter}
-              onClose={() => setShowReciterDropdown(false)}
-            />
+            </View>
           </View>
 
           {/* Playback Controls */}
@@ -1217,8 +1353,8 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
 
           <TouchableOpacity
             style={{ marginLeft: 8 }}
-            onPress={() => setShowReadingSettings(true)}>
-            <Ionicons name="settings-outline" size={24} color="#fff" />
+            onPress={() => setIsMuted(!isMuted)}>
+            <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -1308,9 +1444,10 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
                   justifyContent: 'center',
                   borderRadius: 12,
                   backgroundColor: 'rgba(255,255,255,0.2)',
-                }}>
+                }}
+                onPress={() => setShowSpeedModal(true)}>
                 <StyledText style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>
-                  1.0 x
+                  {quranAppearance.playbackSpeed || 1.0}x
                 </StyledText>
                 <StyledText style={{ marginTop: 2, fontSize: 9, color: '#fff' }}>
                   {t('speed')}
@@ -1351,9 +1488,10 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
                   justifyContent: 'center',
                   borderRadius: 12,
                   backgroundColor: 'rgba(255,255,255,0.2)',
-                }}>
+                }}
+                onPress={() => navigation.navigate('AudioSettings')}>
                 <Ionicons name="musical-notes" size={20} color="#fff" />
-                <StyledText style={{ marginTop: 2, fontSize: 9, color: '#fff' }}>
+                <StyledText style={{ marginTop: 2, fontSize: 9, color: "#fff" }}>
                   {t('audioLabel')}
                 </StyledText>
               </TouchableOpacity>
@@ -1455,6 +1593,74 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
                   />
                 </View>
               </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Speed Selection Modal */}
+      <Modal
+        visible={showSpeedModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSpeedModal(false)}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}
+          onPress={() => setShowSpeedModal(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View
+              style={{
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                padding: 20,
+                paddingBottom: 40,
+              }}>
+              <StyledText
+                style={{
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  marginBottom: 20,
+                  color: colors.text,
+                }}>
+                {t('playbackSpeed')}
+              </StyledText>
+              {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((speed) => (
+                <TouchableOpacity
+                  key={speed}
+                  onPress={() => {
+                    updateQuranAppearance({ playbackSpeed: speed });
+                    setShowSpeedModal(false);
+                  }}
+                  style={{
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                  <StyledText
+                    style={{
+                      fontSize: 16,
+                      fontWeight: quranAppearance.playbackSpeed === speed ? '600' : '400',
+                      color:
+                        quranAppearance.playbackSpeed === speed
+                          ? colors.primary
+                          : colors.text,
+                    }}>
+                    {speed}x
+                  </StyledText>
+                  {quranAppearance.playbackSpeed === speed && (
+                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
           </TouchableOpacity>
         </TouchableOpacity>

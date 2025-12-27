@@ -52,6 +52,7 @@ import BookmarksScreen from 'app/screens/BookmarksScreen';
 import GoalCreationScreen from 'app/screens/GoalCreationScreen';
 import GoalDetailScreen from 'app/screens/GoalDetailScreen';
 import NotificationsScreen from 'app/screens/NotificationsScreen';
+import AudioSettingsScreen from 'app/screens/AudioSettingsScreen';
 import { apiService } from './app/services/ApiService';
 
 type RootStackParamList = {
@@ -282,6 +283,11 @@ export default function App() {
                             <Stack.Screen
                               name="Notifications"
                               component={NotificationsScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="AudioSettings"
+                              component={AudioSettingsScreen}
                               options={{ headerShown: false }}
                             />
                           </>
