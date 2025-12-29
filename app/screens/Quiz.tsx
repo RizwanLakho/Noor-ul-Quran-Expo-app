@@ -305,10 +305,10 @@ export default function Quiz({ navigation }: any) {
           </View>
 
           {/* Divider between sections */}
-          <View style={{ height: 24, backgroundColor: colors.background }} />
+          {/* <View style={{ height: 24, backgroundColor: colors.background }} /> */}
 
-          {/* Completed Quizzes Section */}
-          <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+          {/* Completed Quizzes Section - COMMENTED OUT FOR NOW */}
+          {/* <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
               <MaterialCommunityIcons name="check-circle" size={24} color="#22c55e" style={{ marginRight: 8 }} />
               <StyledText style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>
@@ -334,17 +334,13 @@ export default function Quiz({ navigation }: any) {
                       shadowRadius: 4,
                       elevation: 2,
                     }}>
-                    {/* Label */}
                     <StyledText style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>
                       Quiz
                     </StyledText>
 
-                    {/* Divider */}
                     <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
 
-                    {/* Main Content Row */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      {/* Icon */}
                       <View style={{
                         width: 48,
                         height: 48,
@@ -357,7 +353,6 @@ export default function Quiz({ navigation }: any) {
                         <MaterialCommunityIcons name="check-circle" size={24} color="#22c55e" />
                       </View>
 
-                      {/* Quiz Info */}
                       <View style={{ flex: 1 }}>
                         <StyledText style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 }}>
                           {category.name}
@@ -368,10 +363,8 @@ export default function Quiz({ navigation }: any) {
                       </View>
                     </View>
 
-                    {/* Divider */}
                     <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
 
-                    {/* Bottom Row */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                       <StyledText style={{ fontSize: 11, color: '#22c55e', fontWeight: '600' }}>
                         Score: {category.bestScore || 0}% ⭐
@@ -401,7 +394,7 @@ export default function Quiz({ navigation }: any) {
                 </StyledText>
               </View>
             )}
-          </View>
+          </View> */}
         </ScrollView>
       )}
     </View>

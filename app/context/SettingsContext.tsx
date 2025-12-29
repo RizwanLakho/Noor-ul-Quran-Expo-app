@@ -3,6 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuranAppearanceSettings, DEFAULT_SETTINGS } from '../types/settings.types';
 import { apiService } from '../services/ApiService';
 
+// Helper: Detect text direction based on language code
+const getTextDirection = (languageCode: string): 'rtl' | 'ltr' => {
+  // RTL languages: Arabic, Urdu, Farsi/Persian, Hebrew
+  const rtlLanguages = ['ar', 'ur', 'fa', 'he'];
+  return rtlLanguages.includes(languageCode) ? 'rtl' : 'ltr';
+};
+
 interface SettingsContextType {
   quranAppearance: QuranAppearanceSettings;
   notificationsEnabled: boolean;
@@ -33,19 +40,43 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const loadSettings = async () => {
     try {
+      console.log('🔄 Loading settings from AsyncStorage...');
       const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        if (settings.quranAppearance) {
-          setQuranAppearance(settings.quranAppearance);
+        console.log('📦 Loaded settings:', {
+          hasQuranAppearance: !!settings.quranAppearance,
+          translatorName: settings.quranAppearance?.selectedTranslatorName,
+          translatorLanguage: settings.quranAppearance?.selectedTranslatorLanguage,
+          translatorIdentifier: settings.quranAppearance?.selectedTranslatorIdentifier,
+        });
 
-          // Auto-select first translator if none is selected
-          if (!settings.quranAppearance.selectedTranslatorName ||
-              !settings.quranAppearance.selectedTranslatorLanguage) {
+        if (settings.quranAppearance) {
+          // Merge saved settings with defaults to ensure all fields exist
+          const mergedAppearance = {
+            ...DEFAULT_SETTINGS.quranAppearance,
+            ...settings.quranAppearance,
+          };
+
+          setQuranAppearance(mergedAppearance);
+
+          // Auto-select first translator if none is selected OR if identifier is missing
+          if (!mergedAppearance.selectedTranslatorName ||
+              !mergedAppearance.selectedTranslatorLanguage ||
+              !mergedAppearance.selectedTranslatorIdentifier) {
+            console.log('⚠️ Missing translator info, auto-selecting...');
             await autoSelectDefaultTranslator();
+          } else {
+            console.log('✅ Translator already configured:', {
+              name: mergedAppearance.selectedTranslatorName,
+              identifier: mergedAppearance.selectedTranslatorIdentifier,
+              direction: mergedAppearance.translationDirection,
+            });
           }
         } else {
           // No saved settings, auto-select translator
+          console.log('⚠️ No quranAppearance in saved settings, auto-selecting...');
           await autoSelectDefaultTranslator();
         }
         if (settings.notificationsEnabled !== undefined) {
@@ -56,80 +87,134 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       } else {
         // First time user, auto-select translator
+        console.log('⚠️ No saved settings found, auto-selecting translator...');
         await autoSelectDefaultTranslator();
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error('❌ Error loading settings:', error);
     }
   };
 
   /**
-   * Auto-select first available translator from database
+   * Auto-select default translator from AlQuran.cloud API
+   * Priority: 1) Ahmed Raza Khan (Urdu), 2) Saheeh International (English)
    * This ensures users see translations immediately without manual selection
    */
   const autoSelectDefaultTranslator = async () => {
     try {
-      console.log('🔄 Auto-selecting default translator...');
+      console.log('🔄 Auto-selecting default translator from AlQuran.cloud...');
 
       // Add timeout to prevent hanging forever
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Translator API timeout')), 5000)
+        setTimeout(() => reject(new Error('Translator API timeout')), 8000)
       );
 
-      const response = await Promise.race([
-        apiService.getTranslators(),
-        timeout
-      ]);
+      const apiCall = fetch('https://api.alquran.cloud/v1/edition?format=text&type=translation')
+        .then(res => res.json());
 
-      let translatorList: any[] = [];
-      if (response && response.translations && Array.isArray(response.translations)) {
-        translatorList = response.translations;
-      } else if (response && response.translators && Array.isArray(response.translators)) {
-        translatorList = response.translators;
-      } else if (Array.isArray(response)) {
-        translatorList = response;
-      }
+      const data = await Promise.race([apiCall, timeout]);
 
-      if (translatorList.length > 0) {
-        // Prefer "Ahmed Ali" (English) as default, otherwise use first translator
-        let defaultTranslator = translatorList.find(
-          (t: any) => t.translator === 'Ahmed Ali' && t.language === 'en'
-        );
+      if (data.code === 200 && data.data && Array.isArray(data.data)) {
+        const translatorList = data.data;
+        console.log(`📚 Fetched ${translatorList.length} translations from AlQuran.cloud`);
 
-        if (!defaultTranslator) {
-          // Fallback: Try to find any English translator
-          defaultTranslator = translatorList.find((t: any) => t.language === 'en');
+        // Priority order for default translator
+        let defaultTranslator =
+          // 1st preference: Ahmed Raza Khan (Urdu) - since user mentioned "ahmed"
+          translatorList.find((t: any) => t.identifier === 'ur.ahmedraza') ||
+          // 2nd preference: Jalandhry (Urdu) - popular in Pakistan
+          translatorList.find((t: any) => t.identifier === 'ur.jalandhry') ||
+          // 3rd preference: Saheeh International (English) - most popular English
+          translatorList.find((t: any) => t.identifier === 'en.sahih') ||
+          // 4th preference: Any English translator
+          translatorList.find((t: any) => t.language === 'en') ||
+          // Fallback: First available translator
+          translatorList[0];
+
+        if (defaultTranslator) {
+          const direction = getTextDirection(defaultTranslator.language);
+
+          console.log('✅ Auto-selected translator:', {
+            name: defaultTranslator.englishName,
+            language: defaultTranslator.language,
+            identifier: defaultTranslator.identifier,
+            direction: direction.toUpperCase()
+          });
+
+          const newAppearance = {
+            ...DEFAULT_SETTINGS.quranAppearance,
+            selectedTranslatorName: defaultTranslator.englishName,
+            selectedTranslatorLanguage: defaultTranslator.language,
+            selectedTranslatorIdentifier: defaultTranslator.identifier, // Important for API calls
+            translationDirection: direction, // Auto-detect RTL/LTR
+          };
+
+          console.log('💾 Saving auto-selected translator:', {
+            name: newAppearance.selectedTranslatorName,
+            language: newAppearance.selectedTranslatorLanguage,
+            identifier: newAppearance.selectedTranslatorIdentifier,
+            direction: newAppearance.translationDirection,
+          });
+
+          setQuranAppearance(newAppearance);
+
+          // Save to storage
+          const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+          const currentSettings = savedSettings ? JSON.parse(savedSettings) : {};
+
+          const settingsToSave = {
+            ...currentSettings,
+            quranAppearance: newAppearance,
+          };
+
+          await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsToSave));
+          console.log('✅ Saved translator settings to AsyncStorage');
         }
-
-        if (!defaultTranslator) {
-          // Fallback: Use first available translator
-          defaultTranslator = translatorList[0];
-        }
-
-        console.log('✅ Auto-selected translator:', defaultTranslator.translator, defaultTranslator.language);
-
+      } else {
+        console.log('⚠️ Failed to fetch translators from AlQuran.cloud, using hardcoded default');
+        // Hardcoded fallback
         const newAppearance = {
           ...DEFAULT_SETTINGS.quranAppearance,
-          selectedTranslatorName: defaultTranslator.translator,
-          selectedTranslatorLanguage: defaultTranslator.language,
+          selectedTranslatorName: 'Saheeh International',
+          selectedTranslatorLanguage: 'en',
+          selectedTranslatorIdentifier: 'en.sahih',
+          translationDirection: 'ltr', // English is LTR
         };
-
         setQuranAppearance(newAppearance);
 
-        // Save to storage
+        // Save fallback to storage
         const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         const currentSettings = savedSettings ? JSON.parse(savedSettings) : {};
-
         await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
           ...currentSettings,
           quranAppearance: newAppearance,
         }));
-      } else {
-        console.log('⚠️ No translators found in database');
+        console.log('✅ Saved fallback translator to AsyncStorage');
       }
     } catch (error) {
       console.error('❌ Error auto-selecting translator:', error);
-      // Don't block app initialization - continue with defaults
+      // Use hardcoded default as fallback
+      const newAppearance = {
+        ...DEFAULT_SETTINGS.quranAppearance,
+        selectedTranslatorName: 'Saheeh International',
+        selectedTranslatorLanguage: 'en',
+        selectedTranslatorIdentifier: 'en.sahih',
+        translationDirection: 'ltr', // English is LTR
+      };
+      setQuranAppearance(newAppearance);
+
+      // Save error fallback to storage
+      try {
+        const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+        const currentSettings = savedSettings ? JSON.parse(savedSettings) : {};
+        await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+          ...currentSettings,
+          quranAppearance: newAppearance,
+        }));
+        console.log('✅ Saved error fallback translator to AsyncStorage');
+      } catch (saveError) {
+        console.error('❌ Failed to save error fallback:', saveError);
+      }
     }
   };
 

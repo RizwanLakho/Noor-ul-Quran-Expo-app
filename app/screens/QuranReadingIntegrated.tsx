@@ -27,6 +27,14 @@ import StyledText from '../components/StyledText';
 import { apiService } from '../services/ApiService';
 import type { Ayah } from './types/quran.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+
+// Helper: Detect text direction based on language code
+const getTextDirection = (languageCode: string): 'rtl' | 'ltr' => {
+  // RTL languages: Arabic, Urdu, Farsi/Persian, Hebrew
+  const rtlLanguages = ['ar', 'ur', 'fa', 'he'];
+  return rtlLanguages.includes(languageCode) ? 'rtl' : 'ltr';
+};
 
 export default function QuranReadingIntegrated({ route, navigation }: any) {
   const { colors, isDark } = useTheme();
@@ -41,11 +49,17 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
   const [isPlaying, setIsPlaying] = useState(false);
   // Use reciter from settings context instead of local state
   const selectedReciter = quranAppearance.selectedReciter || 'ar.alafasy';
-  const [selectedTranslation, setSelectedTranslation] = useState(t('translationEng'));
+  const [selectedTranslation, setSelectedTranslation] = useState(
+    quranAppearance.selectedTranslatorName || t('translationEng')
+  );
   const [showReciterDropdown, setShowReciterDropdown] = useState(false);
   const [showTranslationDropdown, setShowTranslationDropdown] = useState(false);
   const [showReadingSettings, setShowReadingSettings] = useState(false);
   const [showSpeedModal, setShowSpeedModal] = useState(false);
+
+  // Translation state - fetch from API
+  const [translators, setTranslators] = useState<Array<{translator: string; language: string; identifier: string}>>([]);
+  const [loadingTranslators, setLoadingTranslators] = useState(false);
 
   // Animated scroll-based player control (hardware accelerated)
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -122,14 +136,79 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
     { name: t('reciterMisharyRashid'), folder: 'ar.alafasy' },
   ];
 
-  const translations = [
-    t('translationEng'),
-    t('translationUrdu'),
-    t('translationIndonesia'),
-    t('translationTurkce'),
-    t('translationFrancais'),
-    t('translationDeutsch'),
-  ];
+  // Fetch translators from AlQuran.cloud API on mount
+  useEffect(() => {
+    const fetchTranslators = async () => {
+      try {
+        setLoadingTranslators(true);
+        console.log('📚 Fetching translations from AlQuran.cloud API...');
+
+        const response = await fetch('https://api.alquran.cloud/v1/edition?format=text&type=translation');
+        const data = await response.json();
+
+        if (data.code === 200 && data.data && Array.isArray(data.data)) {
+          const translatorList = data.data.map((edition: any) => ({
+            translator: edition.englishName,
+            language: edition.language,
+            identifier: edition.identifier
+          }));
+
+          console.log('✅ Loaded translations:', translatorList.length);
+          setTranslators(translatorList);
+        } else {
+          console.error('❌ Invalid API response');
+          setTranslators([]);
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch translators:', error);
+        setTranslators([]);
+      } finally {
+        setLoadingTranslators(false);
+      }
+    };
+
+    fetchTranslators();
+  }, []);
+
+  // Handle translator selection and reload translations
+  const handleTranslatorChange = async (translatorName: string) => {
+    try {
+      console.log(`🔄 Switching translator to: ${translatorName}`);
+
+      // Find translator info
+      const translator = translators.find(t => t.translator === translatorName);
+      if (!translator) {
+        console.error('❌ Translator not found:', translatorName);
+        return;
+      }
+
+      // Detect text direction
+      const direction = getTextDirection(translator.language);
+
+      // Update local state
+      setSelectedTranslation(translatorName);
+
+      // Update settings context with identifier and direction
+      await updateQuranAppearance({
+        selectedTranslatorName: translatorName,
+        selectedTranslatorLanguage: translator.language,
+        selectedTranslatorIdentifier: translator.identifier,
+        translationDirection: direction
+      });
+
+      // Close dropdown
+      setShowTranslationDropdown(false);
+
+      // Reload data with new translator
+      await fetchQuranData();
+
+      console.log(`✅ Translation switched to: ${translatorName} (${translator.identifier}) - ${direction.toUpperCase()}`);
+      showAlert(t('success'), `Translation switched to ${translatorName}`, 'success');
+    } catch (error) {
+      console.error('❌ Failed to switch translator:', error);
+      showAlert(t('error'), 'Failed to switch translation', 'error');
+    }
+  };
 
   // Audio URL fetcher from AlQuran.cloud API
   const getAudioUrl = async (surah: number, ayah: number, reciterEdition: string): Promise<string> => {
@@ -188,34 +267,76 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
       setLoading(true);
 
       if (type === 'surah' && surahNumber) {
-        console.log(
-          `📖 Calling getSurahById with surahNumber: ${surahNumber}, translator: ${quranAppearance.selectedTranslatorName} (${quranAppearance.selectedTranslatorLanguage})`
-        );
-
-        const response = await apiService.getSurahById(
-          surahNumber,
-          quranAppearance.selectedTranslatorName,
-          quranAppearance.selectedTranslatorLanguage
-        );
-
-        setCurrentSurah({
-          name: response.surah.surah_name_english,
-          nameArabic: response.surah.surah_name_arabic,
-          number: response.surah.surah_number,
-          revelationType: response.surah.revelation_type,
-          numberOfAyahs: response.surah.total_ayahs,
+        // Log current settings state for debugging
+        console.log('🔍 Current quranAppearance:', {
+          selectedTranslatorIdentifier: quranAppearance.selectedTranslatorIdentifier,
+          selectedTranslatorName: quranAppearance.selectedTranslatorName,
+          selectedTranslatorLanguage: quranAppearance.selectedTranslatorLanguage,
         });
 
-        // Use ayahs with translations already merged by getSurahById
-        const ayahsArray = response.ayahs || [];
-        if (ayahsArray.length > 0) {
-          console.log({
-            number: ayahsArray[0].aya,
-            hasArabic: !!ayahsArray[0].text,
-            hasTranslation: !!ayahsArray[0].translation,
-            translationPreview: ayahsArray[0].translation?.substring(0, 50),
-          });
+        // Use identifier with proper fallback
+        const translatorId = quranAppearance.selectedTranslatorIdentifier || 'en.sahih';
+        console.log(`📖 Fetching Surah ${surahNumber} from AlQuran.cloud API`);
+        console.log(`📚 Translator: ${translatorId} (${quranAppearance.selectedTranslatorName || 'Saheeh International'})`);
+
+        // Fetch Arabic and Translation separately for better reliability
+        const arabicUrl = `https://api.alquran.cloud/v1/surah/${surahNumber}/quran-simple`;
+        const translationUrl = `https://api.alquran.cloud/v1/surah/${surahNumber}/${translatorId}`;
+
+        console.log(`🔗 Fetching Arabic from: ${arabicUrl}`);
+        console.log(`🔗 Fetching Translation from: ${translationUrl}`);
+
+        // Fetch both in parallel
+        const [arabicResponse, translationResponse] = await Promise.all([
+          fetch(arabicUrl),
+          fetch(translationUrl)
+        ]);
+
+        const arabicResult = await arabicResponse.json();
+        const translationResult = await translationResponse.json();
+
+        console.log(`📡 Arabic API Response: ${arabicResult.code}`, arabicResult.data?.edition?.identifier);
+        console.log(`📡 Translation API Response: ${translationResult.code}`, translationResult.data?.edition?.identifier);
+
+        // Validate responses
+        if (arabicResult.code !== 200 || !arabicResult.data) {
+          console.error('❌ Invalid Arabic API response:', arabicResult);
+          throw new Error(`Failed to fetch Arabic text: ${arabicResult.status || 'Unknown error'}`);
         }
+
+        if (translationResult.code !== 200 || !translationResult.data) {
+          console.error('❌ Invalid Translation API response:', translationResult);
+          throw new Error(`Failed to fetch translation: ${translationResult.status || 'Unknown error'}`);
+        }
+
+        const arabicData = arabicResult.data;
+        const translationData = translationResult.data;
+
+        setCurrentSurah({
+          name: arabicData.englishName,
+          nameArabic: arabicData.name,
+          number: arabicData.number,
+          revelationType: arabicData.revelationType,
+          numberOfAyahs: arabicData.numberOfAyahs,
+        });
+
+        // Merge Arabic and Translation ayahs
+        const ayahsArray = arabicData.ayahs.map((arabicAyah: any, index: number) => ({
+          sura: arabicAyah.numberInSurah,
+          aya: arabicAyah.numberInSurah,
+          text: arabicAyah.text, // Arabic text
+          translation: translationData.ayahs[index]?.text || '', // Translation text
+        }));
+
+        console.log('✅ Data merged successfully:', {
+          surahName: arabicData.englishName,
+          ayahsCount: ayahsArray.length,
+          hasArabic: !!ayahsArray[0]?.text,
+          hasTranslation: !!ayahsArray[0]?.translation,
+          translationPreview: ayahsArray[0]?.translation?.substring(0, 50),
+          translationDirection: quranAppearance.translationDirection,
+        });
+
         setAyahs(ayahsArray);
 
         // Fetch word-by-word data if enabled
@@ -315,27 +436,72 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
         );
         navigation.goBack();
       } else {
-        // Default: Load Al-Fatihah with selected translator
-        const response = await apiService.getSurahById(
-          1,
-          quranAppearance.selectedTranslatorName,
-          quranAppearance.selectedTranslatorLanguage
-        );
-
-        setCurrentSurah({
-          name: response.surah.surah_name_english,
-          nameArabic: response.surah.surah_name_arabic,
-          number: response.surah.surah_number,
-          revelationType: response.surah.revelation_type,
-          numberOfAyahs: response.surah.total_ayahs,
+        // Default: Load Al-Fatihah (Surah 1) with selected translator from AlQuran.cloud
+        console.log('🔍 Current quranAppearance (default case):', {
+          selectedTranslatorIdentifier: quranAppearance.selectedTranslatorIdentifier,
+          selectedTranslatorName: quranAppearance.selectedTranslatorName,
+          selectedTranslatorLanguage: quranAppearance.selectedTranslatorLanguage,
         });
 
-        // Use ayahs with translations already merged by getSurahById
-        const ayahsArray = response.ayahs || [];
+        const translatorId = quranAppearance.selectedTranslatorIdentifier || 'en.sahih';
+        console.log(`📖 Loading default Surah 1 from AlQuran.cloud with translation: ${translatorId}`);
+
+        // Fetch Arabic and Translation separately
+        const arabicUrl = `https://api.alquran.cloud/v1/surah/1/quran-simple`;
+        const translationUrl = `https://api.alquran.cloud/v1/surah/1/${translatorId}`;
+
+        const [arabicResponse, translationResponse] = await Promise.all([
+          fetch(arabicUrl),
+          fetch(translationUrl)
+        ]);
+
+        const arabicResult = await arabicResponse.json();
+        const translationResult = await translationResponse.json();
+
+        if (arabicResult.code !== 200 || !arabicResult.data) {
+          throw new Error('Failed to fetch Arabic text from AlQuran API');
+        }
+
+        if (translationResult.code !== 200 || !translationResult.data) {
+          throw new Error('Failed to fetch translation from AlQuran API');
+        }
+
+        const arabicData = arabicResult.data;
+        const translationData = translationResult.data;
+
+        setCurrentSurah({
+          name: arabicData.englishName,
+          nameArabic: arabicData.name,
+          number: arabicData.number,
+          revelationType: arabicData.revelationType,
+          numberOfAyahs: arabicData.numberOfAyahs,
+        });
+
+        const ayahsArray = arabicData.ayahs.map((arabicAyah: any, index: number) => ({
+          sura: arabicAyah.numberInSurah,
+          aya: arabicAyah.numberInSurah,
+          text: arabicAyah.text,
+          translation: translationData.ayahs[index]?.text || '',
+        }));
+
         setAyahs(ayahsArray);
+        console.log(`✅ Loaded default Surah 1 with ${ayahsArray.length} ayahs`);
       }
     } catch (error) {
-      showAlert(t('error'), t('failedToLoadQuranData'), 'error', [
+      console.error('❌ Failed to fetch Quran data:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: type,
+        surahNumber: surahNumber,
+        juzNumber: juzNumber,
+        translatorId: quranAppearance.selectedTranslatorIdentifier
+      });
+
+      const errorMessage = error instanceof Error
+        ? `Failed to load Quran data: ${error.message}`
+        : 'Failed to load Quran data. Please check your connection.';
+
+      showAlert(t('error'), errorMessage, 'error', [
         { text: t('retry'), onPress: () => fetchQuranData() },
         { text: t('goBack'), onPress: () => navigation.goBack() },
       ]);
@@ -420,7 +586,7 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
           // BACKEND TRACKING: Send reading session to backend for overall stats
           const sendToBackend = async () => {
             try {
-              const authToken = await AsyncStorage.getItem('@auth_token');
+              const authToken = await SecureStore.getItemAsync('auth_token');
               if (!authToken) {
                 console.log('⚠️ No auth token - skipping backend tracking');
                 return;
@@ -484,7 +650,7 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
 
         // BACKEND TRACKING: Also send periodic updates to backend
         try {
-          const authToken = await AsyncStorage.getItem('@auth_token');
+          const authToken = await SecureStore.getItemAsync('auth_token');
           if (authToken) {
             const timeElapsed = Math.floor((Date.now() - sessionStartTime.current) / 1000);
             const sessionData: any = {
@@ -949,6 +1115,7 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
                             color: colors.textSecondary,
                             textAlign: 'center',
                             maxWidth: 100,
+                            fontFamily: quranAppearance.selectedTranslatorLanguage === 'ur' ? 'urdu' : undefined,
                           }}>
                           {word.translation}
                         </StyledText>
@@ -1042,7 +1209,9 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
                     fontSize: quranAppearance.translationTextSize,
                     lineHeight: quranAppearance.translationTextSize * 1.5,
                     color: colors.text,
-                    textAlign: 'left',
+                    textAlign: quranAppearance.translationDirection === 'rtl' ? 'right' : 'left',
+                    writingDirection: quranAppearance.translationDirection === 'rtl' ? 'rtl' : 'ltr',
+                    fontFamily: quranAppearance.selectedTranslatorLanguage === 'ur' ? 'urdu' : undefined,
                   }}>
                   {ayah.translation}
                 </StyledText>
@@ -1371,52 +1540,8 @@ export default function QuranReadingIntegrated({ route, navigation }: any) {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
             }}>
-            {/* Translation Dropdown */}
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                }}
-                onPress={() => {
-                  setShowTranslationDropdown(!showTranslationDropdown);
-                  setShowReciterDropdown(false);
-                }}>
-                <StyledText
-                  style={{ marginRight: 4, fontSize: 12, fontWeight: '600', color: '#fff' }}>
-                  {selectedTranslation}
-                </StyledText>
-                <View
-                  style={{
-                    marginHorizontal: 8,
-                    height: 16,
-                    width: 1,
-                    backgroundColor: '#fff',
-                    opacity: 0.3,
-                  }}
-                />
-                <StyledText style={{ fontSize: 12, color: '#fff' }}>
-                  {t('translationUrdu')}
-                </StyledText>
-              </TouchableOpacity>
-              <StyledText style={{ marginTop: 4, fontSize: 10, color: '#fff' }}>
-                {t('translationLabel')}
-              </StyledText>
-              <Dropdown
-                visible={showTranslationDropdown}
-                options={translations}
-                selected={selectedTranslation}
-                onSelect={setSelectedTranslation}
-                onClose={() => setShowTranslationDropdown(false)}
-              />
-            </View>
-
             {/* Action Buttons */}
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity

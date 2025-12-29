@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../services/ApiService';
 import { Goal, GoalFormData, GoalItem } from '../types/goals.types';
 
@@ -44,7 +45,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Only load goals if user is logged in (has auth token)
     const checkAndLoadGoals = async () => {
       try {
-        const authToken = await AsyncStorage.getItem('@auth_token');
+        const authToken = await SecureStore.getItemAsync('auth_token');
         if (authToken) {
           loadGoals();
         } else {

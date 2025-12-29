@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../services/ApiService';
 
 export interface LoginRequest {
@@ -40,10 +41,10 @@ export const api = {
       console.log('📦 Response Data:', JSON.stringify(data, null, 2));
 
       if (data.token) {
-        // Store the token and user data
-        await AsyncStorage.setItem('@auth_token', data.token);
+        // Store the token securely and user data
+        await SecureStore.setItemAsync('auth_token', data.token);
         await AsyncStorage.setItem('@user_data', JSON.stringify(data.user));
-        console.log('✅ Login successful, token stored');
+        console.log('✅ Login successful, token stored securely');
       }
 
       return {
@@ -51,22 +52,23 @@ export const api = {
         message: 'Login successful',
         data: data,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Login error:', error);
 
       // Extract error message from backend response
       let errorMessage = 'Network error. Please check your connection.';
 
-      if (error.details?.error) {
+      const err = error as { details?: { error?: string; attemptsRemaining?: number }; message?: string };
+      if (err.details?.error) {
         // Backend error with details
-        errorMessage = error.details.error;
+        errorMessage = err.details.error;
 
         // Add attempts remaining if available
-        if (error.details.attemptsRemaining !== undefined) {
-          errorMessage += `\n\nAttempts remaining: ${error.details.attemptsRemaining}`;
+        if (err.details.attemptsRemaining !== undefined) {
+          errorMessage += `\n\nAttempts remaining: ${err.details.attemptsRemaining}`;
         }
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
 
       return {
@@ -99,10 +101,10 @@ export const api = {
       console.log('   User Email:', data?.user?.email || 'N/A');
 
       if (data.token) {
-        // Store the token and user data
-        await AsyncStorage.setItem('@auth_token', data.token);
+        // Store the token securely and user data
+        await SecureStore.setItemAsync('auth_token', data.token);
         await AsyncStorage.setItem('@user_data', JSON.stringify(data.user));
-        console.log('✅ Token and user data stored');
+        console.log('✅ Token stored securely and user data stored');
       }
 
       return {
@@ -110,21 +112,23 @@ export const api = {
         message: data.message || 'Registration successful',
         data: data,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ SignUp error:', error);
-      console.error('   Error Type:', error.name);
-      console.error('   Error Code:', error.code);
-      console.error('   Error Status:', error.status);
+
+      const err = error as { name?: string; code?: string; status?: number; details?: { error?: string }; message?: string };
+      console.error('   Error Type:', err.name);
+      console.error('   Error Code:', err.code);
+      console.error('   Error Status:', err.status);
 
       // Extract error message from backend response
       let errorMessage = 'Network error. Please check your connection.';
 
-      if (error.details?.error) {
+      if (err.details?.error) {
         // Backend error with details
-        errorMessage = error.details.error;
+        errorMessage = err.details.error;
         console.error('   Backend Error:', errorMessage);
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
         console.error('   Error Message:', errorMessage);
       }
 
@@ -140,7 +144,7 @@ export const api = {
    */
   logout: async (): Promise<void> => {
     try {
-      await AsyncStorage.removeItem('@auth_token');
+      await SecureStore.deleteItemAsync('auth_token');
       await AsyncStorage.removeItem('@user_data');
       await AsyncStorage.removeItem('@logged_in');
     } catch (error) {
@@ -153,7 +157,7 @@ export const api = {
    */
   getAuthToken: async (): Promise<string | null> => {
     try {
-      return await AsyncStorage.getItem('@auth_token');
+      return await SecureStore.getItemAsync('auth_token');
     } catch (error) {
       console.error('Get token error:', error);
       return null;
@@ -163,7 +167,12 @@ export const api = {
   /**
    * Get stored user data
    */
-  getUserData: async (): Promise<any | null> => {
+  getUserData: async (): Promise<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null> => {
     try {
       const userData = await AsyncStorage.getItem('@user_data');
       return userData ? JSON.parse(userData) : null;
@@ -185,11 +194,12 @@ export const api = {
         success: true,
         message: data.message || 'Email verified successfully!',
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Email verification error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Email verification failed. Please try again.',
+        message: err.message || 'Email verification failed. Please try again.',
       };
     }
   },
@@ -206,11 +216,12 @@ export const api = {
         success: true,
         message: data.message || 'Verification email sent! Please check your inbox.',
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Resend verification error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Failed to resend verification email.',
+        message: err.message || 'Failed to resend verification email.',
       };
     }
   },
@@ -230,8 +241,8 @@ export const api = {
       const data = await apiService.googleAuth(googleData);
 
       if (data.data?.token) {
-        // Store the token and user data
-        await AsyncStorage.setItem('@auth_token', data.data.token);
+        // Store the token securely and user data
+        await SecureStore.setItemAsync('auth_token', data.data.token);
         await AsyncStorage.setItem('@user_data', JSON.stringify(data.data.user));
         console.log('✅ Google authentication successful');
       }
@@ -241,11 +252,12 @@ export const api = {
         message: data.message || 'Signed in with Google successfully!',
         data: data.data,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Google auth error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Google authentication failed.',
+        message: err.message || 'Google authentication failed.',
       };
     }
   },
@@ -265,8 +277,8 @@ export const api = {
       const data = await apiService.facebookAuth(facebookData);
 
       if (data.data?.token) {
-        // Store the token and user data
-        await AsyncStorage.setItem('@auth_token', data.data.token);
+        // Store the token securely and user data
+        await SecureStore.setItemAsync('auth_token', data.data.token);
         await AsyncStorage.setItem('@user_data', JSON.stringify(data.data.user));
         console.log('✅ Facebook authentication successful');
       }
@@ -276,11 +288,12 @@ export const api = {
         message: data.message || 'Signed in with Facebook successfully!',
         data: data.data,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Facebook auth error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Facebook authentication failed.',
+        message: err.message || 'Facebook authentication failed.',
       };
     }
   },
@@ -296,11 +309,12 @@ export const api = {
         message: 'User data retrieved',
         data: data.data,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Get current user error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Failed to get user data.',
+        message: err.message || 'Failed to get user data.',
       };
     }
   },
@@ -317,11 +331,12 @@ export const api = {
         success: true,
         message: data.message || 'Password reset code sent to your email.',
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Forgot password error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Failed to send password reset email.',
+        message: err.message || 'Failed to send password reset email.',
       };
     }
   },
@@ -338,11 +353,12 @@ export const api = {
         success: true,
         message: data.message || 'Password reset successful! You can now login.',
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Reset password error:', error);
+      const err = error as { message?: string };
       return {
         success: false,
-        message: error.message || 'Failed to reset password. Please try again.',
+        message: err.message || 'Failed to reset password. Please try again.',
       };
     }
   },

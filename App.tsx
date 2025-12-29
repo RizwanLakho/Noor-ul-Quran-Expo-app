@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useFonts } from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import {
@@ -53,6 +54,13 @@ import GoalCreationScreen from 'app/screens/GoalCreationScreen';
 import GoalDetailScreen from 'app/screens/GoalDetailScreen';
 import NotificationsScreen from 'app/screens/NotificationsScreen';
 import AudioSettingsScreen from 'app/screens/AudioSettingsScreen';
+import ReciterSurahsScreen from 'app/screens/ReciterSurahsScreen';
+import HelpCenterScreen from 'app/screens/HelpCenterScreen';
+import CustomerSupportScreen from 'app/screens/CustomerSupportScreen';
+import FAQsScreen from 'app/screens/FAQsScreen';
+import TermsOfServiceScreen from 'app/screens/TermsOfServiceScreen';
+import PrivacyPolicyScreen from 'app/screens/PrivacyPolicyScreen';
+import { DownloadsProvider } from './app/context/DownloadsContext';
 import { apiService } from './app/services/ApiService';
 
 type RootStackParamList = {
@@ -63,6 +71,13 @@ type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: { email: string };
   Main: undefined;
+  ReciterSurahs: {
+    reciter: {
+      identifier: string;
+      englishName: string;
+      name: string;
+    };
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -94,7 +109,7 @@ export default function App() {
         console.log('📱 Checking app state...'); // Hardcoded for console log
         const onboarding = await AsyncStorage.getItem('@onboarding_complete');
         const loginStatus = await AsyncStorage.getItem('@logged_in');
-        const authToken = await AsyncStorage.getItem('@auth_token');
+        const authToken = await SecureStore.getItemAsync('auth_token');
 
         console.log('App state:', { // Hardcoded for console log
           onboardingComplete: onboarding === 'true',
@@ -169,12 +184,13 @@ export default function App() {
         <ThemeProvider>
           <LanguageProvider>
             <SettingsProvider>
-              <DailyAyahProvider>
-                <SearchHistoryProvider>
-                  <GoalsProvider>
-                    <BookmarksProvider>
-                      <LastReadProvider>
-                        <QuizProvider>
+              <DownloadsProvider>
+                <DailyAyahProvider>
+                  <SearchHistoryProvider>
+                    <GoalsProvider>
+                      <BookmarksProvider>
+                        <LastReadProvider>
+                          <QuizProvider>
                       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
                         <StatusBar style="auto" />
 
@@ -290,6 +306,38 @@ export default function App() {
                               component={AudioSettingsScreen}
                               options={{ headerShown: false }}
                             />
+                            <Stack.Screen
+                              name="ReciterSurahs"
+                              component={ReciterSurahsScreen}
+                              options={{ headerShown: false }}
+                            />
+
+                            {/* Support & Legal Screens */}
+                            <Stack.Screen
+                              name="HelpCenter"
+                              component={HelpCenterScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="CustomerSupport"
+                              component={CustomerSupportScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="FAQs"
+                              component={FAQsScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="Terms"
+                              component={TermsOfServiceScreen}
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="Privacy"
+                              component={PrivacyPolicyScreen}
+                              options={{ headerShown: false }}
+                            />
                           </>
                         )}
                       </Stack.Navigator>
@@ -302,6 +350,7 @@ export default function App() {
                 </GoalsProvider>
               </SearchHistoryProvider>
             </DailyAyahProvider>
+          </DownloadsProvider>
           </SettingsProvider>
         </LanguageProvider>
       </ThemeProvider>

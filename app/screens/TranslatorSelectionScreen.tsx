@@ -15,12 +15,20 @@ import { useCustomAlert } from '../context/CustomAlertContext';
 import StyledText from '../components/StyledText';
 import { apiService } from '../services/ApiService';
 
+// Helper: Detect text direction based on language code
+const getTextDirection = (languageCode: string): 'rtl' | 'ltr' => {
+  // RTL languages: Arabic, Urdu, Farsi/Persian, Hebrew
+  const rtlLanguages = ['ar', 'ur', 'fa', 'he'];
+  return rtlLanguages.includes(languageCode) ? 'rtl' : 'ltr';
+};
+
 interface Translator {
-  translator: string; // translator name from backend
+  translator: string; // translator name (englishName from API)
   language: string;
-  total_ayahs?: string; // Backend returns as string
-  added_date?: string;
-  last_updated?: string;
+  total_ayahs?: string;
+  identifier?: string; // AlQuran.cloud edition identifier (e.g., "en.sahih")
+  format?: string;
+  type?: string;
 }
 
 export default function TranslatorSelectionScreen({ navigation }) {
@@ -45,49 +53,76 @@ export default function TranslatorSelectionScreen({ navigation }) {
   const fetchTranslators = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getTranslators();
+      console.log('📚 Fetching translations from AlQuran.cloud API...');
 
-      let translatorList: Translator[] = [];
-      // Handle response format from backend
-      if (response && response.translations && Array.isArray(response.translations)) {
-        translatorList = response.translations;
-      } else if (response && response.translators && Array.isArray(response.translators)) {
-        translatorList = response.translators;
-      } else if (Array.isArray(response)) {
-        translatorList = response;
+      // Fetch from AlQuran.cloud API instead of backend
+      const response = await fetch('https://api.alquran.cloud/v1/edition?format=text&type=translation');
+      const data = await response.json();
+
+      console.log('📡 AlQuran API response:', { code: data.code, count: data.data?.length });
+
+      if (data.code === 200 && data.data && Array.isArray(data.data)) {
+        // Transform AlQuran.cloud editions to our format
+        const translatorList: Translator[] = data.data.map((edition: any) => ({
+          translator: edition.englishName, // e.g., "Saheeh International"
+          language: edition.language, // e.g., "en"
+          total_ayahs: '6236', // All translations have full Quran
+          identifier: edition.identifier, // e.g., "en.sahih" - IMPORTANT for API calls
+          format: edition.format,
+          type: edition.type
+        }));
+
+        console.log('✅ Loaded translations:', translatorList.length);
+        setTranslators(translatorList);
+
+        // Auto-select first translator if none is selected
+        if (translatorList.length > 0 && !quranAppearance.selectedTranslatorName) {
+          const firstTranslator = translatorList[0];
+          const direction = getTextDirection(firstTranslator.language);
+
+          setSelectedTranslatorName(firstTranslator.translator);
+          setSelectedTranslatorLanguage(firstTranslator.language);
+          // Auto-save the first translator as default
+          updateQuranAppearance({
+            selectedTranslatorName: firstTranslator.translator,
+            selectedTranslatorLanguage: firstTranslator.language,
+            selectedTranslatorIdentifier: firstTranslator.identifier, // Store identifier for API calls
+            translationDirection: direction // Auto-detect RTL/LTR
+          });
+        }
       } else {
-      }
-
-      setTranslators(translatorList);
-
-      // Auto-select first translator if none is selected
-      if (translatorList.length > 0 && !quranAppearance.selectedTranslatorName) {
-        const firstTranslator = translatorList[0];
-        setSelectedTranslatorName(firstTranslator.translator);
-        setSelectedTranslatorLanguage(firstTranslator.language);
-        // Auto-save the first translator as default
-        updateQuranAppearance({
-          selectedTranslatorName: firstTranslator.translator,
-          selectedTranslatorLanguage: firstTranslator.language
-        });
+        console.error('❌ Invalid API response:', data);
+        showAlert(t('error'), 'Failed to load translations from API', 'error');
       }
     } catch (error) {
+      console.error('❌ Failed to fetch translations:', error);
       showAlert(t('error'), t('failedToLoadTranslators'), 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  const [selectedTranslatorIdentifier, setSelectedTranslatorIdentifier] = useState(
+    quranAppearance.selectedTranslatorIdentifier || ''
+  );
+
   const handleSelectTranslator = (translator: Translator) => {
     setSelectedTranslatorName(translator.translator);
     setSelectedTranslatorLanguage(translator.language);
+    setSelectedTranslatorIdentifier(translator.identifier || '');
   };
 
   const handleSave = () => {
+    const direction = getTextDirection(selectedTranslatorLanguage);
+
     updateQuranAppearance({
       selectedTranslatorName,
-      selectedTranslatorLanguage
+      selectedTranslatorLanguage,
+      selectedTranslatorIdentifier,
+      translationDirection: direction
     });
+
+    console.log(`✅ Saved translator with direction: ${selectedTranslatorName} (${selectedTranslatorLanguage}) - ${direction.toUpperCase()}`);
     showAlert(t('success'), t('settingsSavedSuccess'), 'success');
     navigation.goBack();
   };
@@ -141,7 +176,7 @@ export default function TranslatorSelectionScreen({ navigation }) {
           <View className="px-6 py-6">
             <View className="overflow-hidden rounded-xl border border-gray-200 bg-white">
               {translators.map((translator, index) => (
-                <View key={translator.translator}>
+                <View key={translator.identifier || `translator-${index}`}>
                   <TouchableOpacity
                     className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50"
                     onPress={() => handleSelectTranslator(translator)}

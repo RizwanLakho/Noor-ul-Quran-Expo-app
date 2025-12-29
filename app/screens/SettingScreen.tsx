@@ -255,6 +255,28 @@ export default function SettingsScreen({ navigation }) {
                 paddingHorizontal: 20,
                 paddingBottom: 16,
               }}>
+              {/* Translator Selection Button */}
+              <TouchableOpacity
+                style={{
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+                onPress={() => navigation.navigate('TranslatorSelection')}>
+                <View style={{ flex: 1 }}>
+                  <StyledText style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 4 }}>
+                    {t('selectTranslator')}
+                  </StyledText>
+                  <StyledText style={{ fontSize: 12, color: colors.textSecondary }}>
+                    {quranAppearance.selectedTranslatorName || t('noTranslatorSelected')}
+                  </StyledText>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+
               {/* Quran Font Selection */}
               <View style={{ paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                 <StyledText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 12 }}>

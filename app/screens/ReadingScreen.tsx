@@ -512,7 +512,12 @@ export default function ReadingScreen({ navigation }) {
                 <View className="border-t border-gray-100 pt-3">
                   <StyledText
                     className="leading-6 text-gray-700"
-                    style={{ fontSize: translationFontSize }}>
+                    style={{
+                      fontSize: translationFontSize,
+                      textAlign: quranAppearance.translationDirection === 'rtl' ? 'right' : 'left',
+                      writingDirection: quranAppearance.translationDirection === 'rtl' ? 'rtl' : 'ltr',
+                      fontFamily: quranAppearance.selectedTranslatorLanguage === 'ur' ? 'urdu' : undefined,
+                    }}>
                     {t('bismillahTranslation')}
                   </StyledText>
                 </View>

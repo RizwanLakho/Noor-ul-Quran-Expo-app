@@ -13,6 +13,8 @@ export interface QuranAppearanceSettings {
   arabicFont: 'quranic' | 'uthman';
   selectedTranslatorName: string; // Name of selected translator
   selectedTranslatorLanguage: string; // Language of selected translator (en, ur, etc)
+  selectedTranslatorIdentifier?: string; // AlQuran.cloud API identifier (e.g., 'en.sahih', 'ur.ahmedraza')
+  translationDirection?: 'ltr' | 'rtl'; // Text direction for translation (auto-detected from language)
   selectedReciter: string; // Reciter identifier for Arabic audio (e.g., 'ar.alafasy')
   // Audio settings
   translatorRecitorEnabled: boolean; // Enable translation audio playback
@@ -44,6 +46,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     arabicFont: 'uthman',
     selectedTranslatorName: '', // Will be set to first available translator
     selectedTranslatorLanguage: '', // Will be set when translator is selected
+    selectedTranslatorIdentifier: '', // AlQuran.cloud identifier (e.g., 'en.sahih')
+    translationDirection: 'ltr', // Default to LTR, will be auto-detected based on language
     selectedReciter: 'ar.alafasy', // Default reciter (AlQuran.cloud API format)
     // Audio settings defaults
     translatorRecitorEnabled: false, // Translation audio disabled by default

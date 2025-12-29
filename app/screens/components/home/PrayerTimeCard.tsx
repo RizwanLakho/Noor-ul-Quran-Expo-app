@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ImageBackground, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import * as Location from 'expo-location';
+import * as SecureStore from 'expo-secure-store';
 
 interface PrayerTimeCardProps {
   currentTime: Date;
@@ -217,8 +218,7 @@ export default function PrayerTimeCard({ currentTime }: PrayerTimeCardProps) {
   // Fetch and update user streak
   const fetchAndUpdateStreak = async () => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const authToken = await AsyncStorage.getItem('@auth_token');
+      const authToken = await SecureStore.getItemAsync('auth_token');
 
       if (!authToken) {
         console.log('⚠️ No auth token, skipping streak update');

@@ -251,7 +251,15 @@ export default function TopicDetailScreen({ route, navigation }: any) {
 
                 {/* Translation */}
                 {ayah.translation && (
-                  <StyledText style={{ marginBottom: 8, fontSize: 14, lineHeight: 24, color: colors.text }}>{ayah.translation}</StyledText>
+                  <StyledText style={{
+                    marginBottom: 8,
+                    fontSize: 14,
+                    lineHeight: 24,
+                    color: colors.text,
+                    textAlign: quranAppearance.translationDirection === 'rtl' ? 'right' : 'left',
+                    writingDirection: quranAppearance.translationDirection === 'rtl' ? 'rtl' : 'ltr',
+                    fontFamily: quranAppearance.selectedTranslatorLanguage === 'ur' ? 'urdu' : undefined,
+                  }}>{ayah.translation}</StyledText>
                 )}
 
                 {/* Notes */}

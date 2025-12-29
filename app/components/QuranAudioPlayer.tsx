@@ -5,7 +5,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../context/SettingsContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useDownloads } from '../context/DownloadsContext';
 import { useNavigation } from '@react-navigation/native';
+import StorageService from '../services/StorageService';
 import StyledText from './StyledText';
 
 interface QuranAudioPlayerProps {
@@ -15,10 +17,28 @@ interface QuranAudioPlayerProps {
   visible?: boolean;
 }
 
-// Audio URL fetcher from AlQuran.cloud API
+// Audio URL fetcher with offline support
+// Checks local storage first, then falls back to API
 const getAudioUrl = async (surah: number, ayah: number, reciterEdition: string): Promise<string> => {
   try {
-    // Use AlQuran.cloud API to get ayah with audio
+    // Check if full surah audio is downloaded locally
+    // NOTE: Current implementation downloads full surah, not individual ayahs
+    // For full offline support, we would need ayah-level downloads or timestamp data
+    const isDownloaded = await StorageService.isAudioDownloaded(reciterEdition, surah);
+
+    if (isDownloaded) {
+      // Get local file path for offline playback
+      const localPath = StorageService.getAudioFilePath(reciterEdition, surah);
+      console.log('🎵 Using offline audio:', localPath);
+
+      // TODO: For proper ayah-by-ayah playback from downloaded surahs,
+      // we would need to implement seeking to ayah timestamps
+      // For now, this will play the full surah from the beginning
+      return localPath;
+    }
+
+    // Fall back to API fetch
+    console.log('🌐 Fetching audio from API...');
     const response = await fetch(
       `https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/${reciterEdition}`
     );

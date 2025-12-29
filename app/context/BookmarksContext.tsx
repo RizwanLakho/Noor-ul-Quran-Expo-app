@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../services/ApiService';
 
 interface Bookmark {
@@ -62,7 +63,7 @@ export const BookmarksProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setLoading(true);
 
       // Check if user is authenticated before attempting backend fetch
-      const authToken = await AsyncStorage.getItem('@auth_token');
+      const authToken = await SecureStore.getItemAsync('auth_token');
 
       if (authToken) {
         // Try to load from backend if authenticated
